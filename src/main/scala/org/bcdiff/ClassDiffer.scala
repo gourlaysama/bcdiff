@@ -1,12 +1,12 @@
 package org.bcdiff
 
+import diff.Diff
 import java.io.{OutputStreamWriter, FileInputStream, File}
 import org.objectweb.asm.tree._
 import org.objectweb.asm.ClassReader
 import collection.{JavaConverters, JavaConversions}
-import org.scaladiff.Diff
-import java.util
-import org.scaladiff.Diff._
+import java.util.ListIterator
+import Diff._
 
 /**
  * ...
@@ -77,41 +77,19 @@ class ClassDiffer(f1: File, f2: File, color: Boolean) {
 
       import JavaConversions._
 
-      val in1 = met1.instructions.iterator().asInstanceOf[util.ListIterator[AbstractInsnNode]].
+      val in1 = met1.instructions.iterator().asInstanceOf[ListIterator[AbstractInsnNode]].
         filter(t => t.getType != AbstractInsnNode.FRAME && t.getType != AbstractInsnNode.LINE).map(ByteCode.convert).toArray
-      val in2 = met2.instructions.iterator().asInstanceOf[util.ListIterator[AbstractInsnNode]].
+      val in2 = met2.instructions.iterator().asInstanceOf[ListIterator[AbstractInsnNode]].
         filter(t => t.getType != AbstractInsnNode.FRAME && t.getType != AbstractInsnNode.LINE).map(ByteCode.convert).toArray
 
       val d = new Diff(in1, in2)
       val diff = d.diff()
 
-      def prettyIns(ch: Change, i: Int) {
-
-        def intPrint(i: Int): String = {
-          if (i < 10)
-            s"  $i"
-          else if (i < 100)
-            s" $i"
-          else
-            i.toString
-        }
-
-        ch match {
-          case Keep =>
-            in2(i) match {
-              case _ :LabelOp =>
-              case a => println(s"    ${intPrint(i)}: $a")
-            }
-          case Remove => removed(s"      : ${in1(i)}")
-          case Insert => added(s"   ${intPrint(i)}: ${in2(i)}")
-        }
-      }
-
       if (diff.exists(_ != Keep)) {
         println()
         println(s" Method ${met1.name} // ${met1.desc}")
 
-        d.formatChanges(diff, prettyIns _)
+        d.formatChanges(diff, color)
       }
     }
   }

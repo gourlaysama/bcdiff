@@ -1,4 +1,6 @@
-package org.scaladiff
+package org.bcdiff.diff
+
+import org.bcdiff.{LabelOp, ByteCode}
 
 object Diff {
 
@@ -17,7 +19,7 @@ object Diff {
  *
  * @author Antoine Gourlay
  */
-class Diff[A](val a: Array[A], val b: Array[A]) {
+class Diff(val a: Array[ByteCode], val b: Array[ByteCode]) {
 
   import Diff._
 
@@ -47,37 +49,39 @@ class Diff[A](val a: Array[A], val b: Array[A]) {
 
     // move left (== removals)
     def left(s: Map[Int, Point]): Map[Int, Point] = {
-      s.flatMap{ p =>
-        if (p._2.x  >= rangeA._1) {
-          s.get(p._1 - 1) match {
-            case None => List((p._1 - 1, p._2.left))
-            case Some(j)=>
-              if (p._2.x -1 < j.x)
-                List((p._1 - 1, p._2.left))
-              else
-                Nil
+      s.flatMap {
+        p =>
+          if (p._2.x >= rangeA._1) {
+            s.get(p._1 - 1) match {
+              case None => List((p._1 - 1, p._2.left))
+              case Some(j) =>
+                if (p._2.x - 1 < j.x)
+                  List((p._1 - 1, p._2.left))
+                else
+                  Nil
+            }
           }
-        }
-        else
-          Nil
+          else
+            Nil
       }
     }
 
     // move up (== insertions)
     def up(s: Map[Int, Point]): Map[Int, Point] = {
-      s.flatMap{ p =>
-        if (p._2.y  >= rangeB._1) {
-          s.get(p._1 + 1) match {
-            case None => List((p._1 + 1, p._2.up))
-            case Some(j)=>
-              if (p._2.y -1 < j.y)
-                List((p._1 + 1, p._2.up))
-              else
-                Nil
+      s.flatMap {
+        p =>
+          if (p._2.y >= rangeB._1) {
+            s.get(p._1 + 1) match {
+              case None => List((p._1 + 1, p._2.up))
+              case Some(j) =>
+                if (p._2.y - 1 < j.y)
+                  List((p._1 + 1, p._2.up))
+                else
+                  Nil
+            }
           }
-        }
-        else
-          Nil
+          else
+            Nil
       }
     }
 
@@ -135,7 +139,35 @@ class Diff[A](val a: Array[A], val b: Array[A]) {
     changes
   }
 
-  def formatChanges[T](ch: Seq[Change], print: (Change, Int) => T): Seq[T] = {
+  def formatChanges[T](ch: Seq[Change], color: Boolean) {
+
+    def added(pos: Int, s: ByteCode) {
+      if (color) {
+        Console.println(Console.GREEN + Console.BOLD + "  + " + Console.RESET + Console.GREEN + intPrint(pos) + ": "
+          + Console.BOLD + s.toString + Console.RESET)
+      } else {
+        println("  + " + intPrint(pos) + ": " + s)
+      }
+    }
+
+    def removed(pos: Int, s: ByteCode) {
+      if (color) {
+        Console.println(Console.RED + Console.BOLD + "  - " + Console.RESET + Console.RED + intPrint(pos) + ": "
+          + Console.BOLD + s.toString + Console.RESET)
+      } else {
+        println("  - " + intPrint(pos) + ": " + s)
+      }
+    }
+
+    def intPrint(i: Int): String = {
+      if (i < 10)
+        s"  $i"
+      else if (i < 100)
+        s" $i"
+      else
+        i.toString
+    }
+
     var i = -1
     var j = -1
 
@@ -143,13 +175,18 @@ class Diff[A](val a: Array[A], val b: Array[A]) {
       case (Keep, k) =>
         i = i + 1
         j = j + 1
-        print(Keep, j)
+        b(j) match {
+//          case _: LabelOp =>
+          case a => println(s"    ${intPrint(j)}: $a")
+        }
       case (Insert, k) =>
         j = j + 1
-        print(Insert, j)
+        added(j, b(j))
       case (Remove, k) =>
         i = i + 1
-        print(Remove, i)
+        removed(i, a(i))
     }.force
   }
+
+
 }
