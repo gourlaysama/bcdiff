@@ -86,20 +86,30 @@ class ClassDiffer(f1: File, f2: File, color: Boolean) {
       val diff = d.diff()
 
       def prettyIns(ch: Change, i: Int) {
+
+        def intPrint(i: Int): String = {
+          if (i < 10)
+            s"  $i"
+          else if (i < 100)
+            s" $i"
+          else
+            i.toString
+        }
+
         ch match {
           case Keep =>
-            in1(i) match {
+            in2(i) match {
               case _ :LabelOp =>
-              case a => println(' ' + a.toString)
+              case a => println(s"    ${intPrint(i)}: $a")
             }
-          case Remove => removed(in1(i))
-          case Insert => added(in2(i))
+          case Remove => removed(s"      : ${in1(i)}")
+          case Insert => added(s"   ${intPrint(i)}: ${in2(i)}")
         }
       }
 
       if (diff.exists(_ != Keep)) {
         println()
-        println(s"Method ${met1.name} // ${met1.desc}")
+        println(s" Method ${met1.name} // ${met1.desc}")
 
         d.formatChanges(diff, prettyIns _)
       }

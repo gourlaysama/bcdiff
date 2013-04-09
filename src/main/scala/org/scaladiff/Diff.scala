@@ -143,7 +143,7 @@ class Diff[A](val a: Array[A], val b: Array[A]) {
       case (Keep, k) =>
         i = i + 1
         j = j + 1
-        print(Keep, i)
+        print(Keep, j)
       case (Insert, k) =>
         j = j + 1
         print(Insert, j)
