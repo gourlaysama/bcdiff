@@ -44,54 +44,85 @@ class Diff[A](val a: Array[A], val b: Array[A]) {
 
 
   def diff(rangeA: (Int, Int), rangeB: (Int, Int)): Seq[Change] = {
-    // WARNING : stupid algorithm
 
     // move left (== removals)
-    def left(s: Set[Point]): Set[Point] = s.filter(_.x >= rangeA._1).map(_.left)
-
-
-    // move up (== insertions)
-    def up(s: Set[Point]): Set[Point] = s.filter(_.y >= rangeB._1).map(_.up)
-
-    // move along a diagonal (== matches)
-    def slide(s: Set[Point]): Set[Point] = {
-      s.flatMap {
-        p =>
-          var t: Point = p
-          while (t.x >= rangeA._1 && t.y >= rangeB._1 && a(t.x) == b(t.y)) {
-            t = t.diag
+    def left(s: Map[Int, Point]): Map[Int, Point] = {
+      s.flatMap{ p =>
+        if (p._2.x  >= rangeA._1) {
+          s.get(p._1 - 1) match {
+            case None => List((p._1 - 1, p._2.left))
+            case Some(j)=>
+              if (p._2.x -1 < j.x)
+                List((p._1 - 1, p._2.left))
+              else
+                Nil
           }
-          if (t.x == p.x && t.y == p.y)
-            Nil
-          else
-            List(t)
+        }
+        else
+          Nil
       }
     }
 
+    // move up (== insertions)
+    def up(s: Map[Int, Point]): Map[Int, Point] = {
+      s.flatMap{ p =>
+        if (p._2.y  >= rangeB._1) {
+          s.get(p._1 + 1) match {
+            case None => List((p._1 + 1, p._2.up))
+            case Some(j)=>
+              if (p._2.y -1 < j.y)
+                List((p._1 + 1, p._2.up))
+              else
+                Nil
+          }
+        }
+        else
+          Nil
+      }
+    }
+
+    // move along a diagonal (== matches)
+    def slide(s: Map[Int, Point]): Map[Int, Point] = {
+      s.map {
+        p =>
+          var t: Point = p._2
+          while (t.x >= rangeA._1 && t.y >= rangeB._1 && a(t.x) == b(t.y)) {
+            t = t.diag
+          }
+          if (t.x == p._2.x && t.y == p._2.y)
+            p
+          else
+            (p._1, t)
+      }
+    }
 
     // start point
-    val init = Set(Point(rangeA._2, rangeB._2, Nil))
+    val init = Point(rangeA._2, rangeB._2, Nil)
+    // start state
+    var state = Map(rangeA._2 - rangeB._2 -> init)
+
     // end point
     val end = Point(rangeA._1 - 1, rangeB._1 - 1, Nil)
 
     // first diagonal matching
-    var state = slide(init)
-    if (state.isEmpty) state = init
+    state = slide(state)
+    //println(state)
 
     // special case of equal inputs
-    var changes: List[Change] = state.head.changes
-    var stop: Boolean = state.exists(p => p.x == rangeA._1 - 1 && p.y == rangeB._1 - 1)
+    var changes: List[Change] = state.head._2.changes
+
+    var stop: Boolean = state.values.exists(p => p.x == rangeA._1 - 1 && p.y == rangeB._1 - 1)
 
     // let's walk the matrix towards the top-left corner
     while (!stop) {
       // move up the matrix
-      val res = left(state) ++ up(state) ++ slide(state)
+      val res = slide(state ++ left(state) ++ up(state))
 
       // should never happen (but who knows...)
       if (res.isEmpty) throw new IllegalStateException()
 
 
-      res.find(_ == end) match {
+      res.values.find(_ == end) match {
         case None =>
         case Some(p) =>
           stop = true
@@ -110,14 +141,14 @@ class Diff[A](val a: Array[A], val b: Array[A]) {
 
     ch.view.zipWithIndex.map {
       case (Keep, k) =>
-        i = i + 1;
-        j = j + 1;
+        i = i + 1
+        j = j + 1
         print(Keep, i)
       case (Insert, k) =>
-        j = j + 1;
+        j = j + 1
         print(Insert, j)
       case (Remove, k) =>
-        i = i + 1;
+        i = i + 1
         print(Remove, i)
     }.force
   }
