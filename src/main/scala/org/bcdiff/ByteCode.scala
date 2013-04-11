@@ -302,7 +302,7 @@ case class LabelOp(label: Label) extends ByteCode {
 case class LoadOp(arg: AnyRef) extends ByteCode {
   val opCode = LDC
 
-  override def toString = "ldc " + arg
+  override def toString = "ldc // " + arg.getClass.getSimpleName + " " + arg.toString
 }
 
 case class IincOp(variable: Int, increment: Int) extends ByteCode {
