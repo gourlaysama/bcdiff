@@ -1,3 +1,5 @@
+import com.typesafe.sbt.SbtStartScript
+
 name := "bcdiff"
 
 version := "0.1-SNAPSHOT"
@@ -11,3 +13,5 @@ libraryDependencies += "org.ow2.asm" % "asm-tree" % "4.1"
 libraryDependencies += "org.rogach" %% "scallop" % "0.8.1"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "1.9.1" % "test"
+
+seq(SbtStartScript.startScriptForClassesSettings: _*)
