@@ -1,19 +1,32 @@
 package org.bcdiff
 
 import diff.Diff
-import java.io.{OutputStreamWriter, FileInputStream, File}
+import java.io.{FileInputStream, File}
 import org.objectweb.asm.tree._
 import org.objectweb.asm.ClassReader
-import collection.{JavaConverters, JavaConversions}
+import collection.JavaConversions
 import java.util.ListIterator
 import Diff._
+import org.bcdiff.ClassDiffer._
+
+object ClassDiffer {
+
+  sealed trait DiffType
+
+  case object Full extends DiffType
+
+  case object Stat extends DiffType
+
+  case object Shortstat extends DiffType
+
+}
 
 /**
  * ...
  *
  * @author Antoine Gourlay
  */
-class ClassDiffer(f1: File, f2: File, color: Boolean) {
+class ClassDiffer(f1: File, f2: File, color: Boolean, typ: DiffType) {
 
   private def prepare(): (ClassNode, ClassNode) = {
     var i1: FileInputStream = null
@@ -49,32 +62,34 @@ class ClassDiffer(f1: File, f2: File, color: Boolean) {
 
     implicit val cn@(cn1, cn2) = prepare()
 
-    // header
-    println(s"bcdiff ${f1.getPath} ${f2.getPath}")
-    if (color) {
-      removed(s"-- ${f1.getPath}")
-      added(s"++ ${f2.getPath}")
-    } else {
-      println(s"--- ${f1.getPath}")
-      println(s"+++ ${f2.getPath}")
+    if (typ == Full) {
+      // header
+      println(s"bcdiff ${f1.getPath} ${f2.getPath}")
+      if (color) {
+        removed(s"-- ${f1.getPath}")
+        added(s"++ ${f2.getPath}")
+      } else {
+        println(s"--- ${f1.getPath}")
+        println(s"+++ ${f2.getPath}")
+      }
+
+      println()
+
+      // basic fields
+      compareField(_.version)
+      compareFieldPretty(_.name)(n => "Name: " + clazzN(n))
+      compareFieldPretty(_.superName)(n => "Parent class: " + clazzN(n))
+
+      // advanced fields
+      compareAccessFlags(cn1.access, cn2.access)
+      compareInterfaces(uglyCast(cn1.interfaces), uglyCast(cn2.interfaces))
+      compareFieldPretty(_.outerClass)(n => "Outer class: " + clazzN(n))
+      // TODO: annotations
+
+      // TODO: fields
+      // TODO: attributes
+      // TODO: inner classes
     }
-
-    println()
-
-    // basic fields
-    compareField(_.version)
-    compareFieldPretty(_.name)(n => "Name: " + clazzN(n))
-    compareFieldPretty(_.superName)(n => "Parent class: " + clazzN(n))
-
-    // advanced fields
-    compareAccessFlags(cn1.access, cn2.access)
-    compareInterfaces(uglyCast(cn1.interfaces), uglyCast(cn2.interfaces))
-    compareFieldPretty(_.outerClass)(n => "Outer class: " + clazzN(n))
-    // TODO: annotations
-
-    // TODO: fields
-    // TODO: attributes
-    // TODO: inner classes
 
     // methods
     val methods1 = uglyCast[MethodNode](cn1.methods).map(a => ((a.name, a.desc), a)).toMap;
@@ -88,19 +103,20 @@ class ClassDiffer(f1: File, f2: File, color: Boolean) {
     val prettyM: ((String, MethodNode)) => String = a =>
       s"Method ${a._2.name} // ${a._2.desc} | ${a._2.instructions.size()} instructions"
 
-    only1.foreach(a => removed((a._1._2, a._2), prettyM))
-    only2.foreach(a => added((a._1._2, a._2), prettyM))
+    if (typ == Full) {
+      only1.foreach(a => removed((a._1._2, a._2), prettyM))
+      only2.foreach(a => added((a._1._2, a._2), prettyM))
+    }
 
     // methods with identical name+signature --> diff
-    for (s <- same) {
-      val met1 = methods1(s)
-      val met2 = methods2(s)
+    val modcount = same.map{s => diffMethods(methods1(s), methods2(s))}.count(_ == true)
 
-      diffMethods(met1, met2)
+    if (typ != Full) {
+      println(s"${only1.size} methods removed, ${only2.size} added, $modcount modified")
     }
   }
 
-  private def diffMethods(met1: MethodNode, met2: MethodNode) {
+  private def diffMethods(met1: MethodNode, met2: MethodNode): Boolean =  {
     import JavaConversions._
 
     // gets the content of the method
@@ -115,13 +131,40 @@ class ClassDiffer(f1: File, f2: File, color: Boolean) {
     val d = new Diff(in1, in2)
     val diff = d.diff()
 
-    // print nothing if there are no differences
-    if (diff.exists(_ != Keep)) {
-      println()
-      println(s" Method ${met1.name} // ${met1.desc}")
+    val modified = diff.exists(_ != Keep)
 
-      d.formatChanges(diff, color)
+    // print nothing if there are no differences
+    if (modified) {
+      if (typ == Full) {
+        println()
+        println(s" Method ${met1.name} // ${met1.desc}")
+
+        d.formatChanges(diff, color)
+      } else if (typ == Stat) {
+        var kp = 0
+        var ins = 0
+        var rem = 0
+        diff.foreach {
+          case Keep => kp = kp + 1
+          case Insert => ins = ins + 1
+          case Remove => rem = rem + 1
+        }
+
+        val total = ins + rem
+        val addsize = Math.ceil(10 * ins / total).toInt
+        val pl = Stream.fill(addsize)('+')
+        val mn = Stream.fill(10 - addsize)('-')
+
+        if (color) {
+          print("  " + total + " " + Console.GREEN + Console.BOLD + pl.mkString + Console.RED + mn.mkString + Console.RESET)
+        } else {
+          print("  " + total + " " + pl.mkString + mn.mkString)
+        }
+        println(s" | Method ${met1.name} // ${met1.desc}")
+      }
     }
+
+    modified
   }
 
   private def compareAccessFlags(a1: Int, a2: Int) {

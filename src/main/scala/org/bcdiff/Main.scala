@@ -2,6 +2,7 @@ package org.bcdiff
 
 import org.rogach.scallop.ScallopConf
 import java.io.File
+import org.bcdiff.ClassDiffer.{Full, Stat, Shortstat}
 
 /**
  * ..
@@ -27,7 +28,15 @@ object Main extends App {
     sys.exit(1)
   }
 
-  val di = new ClassDiffer(f1,f2, c.color())
+  val typ = if (c.shortstat()) {
+    Shortstat
+  } else if (c.stat()) {
+    Stat
+  } else {
+    Full
+  }
+
+  val di = new ClassDiffer(f1,f2, c.color(), typ)
 
   di.diff()
 }
