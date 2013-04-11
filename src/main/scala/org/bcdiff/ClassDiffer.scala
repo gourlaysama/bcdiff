@@ -15,20 +15,39 @@ import Diff._
  */
 class ClassDiffer(f1: File, f2: File, color: Boolean) {
 
+  private def prepare(): (ClassNode, ClassNode) = {
+    var i1: FileInputStream = null
+    var i2: FileInputStream = null
+
+    try {
+      i1 = new FileInputStream(f1)
+      i2 = new FileInputStream(f2)
+
+      val cn1 = new ClassNode()
+      val cn2 = new ClassNode()
+      implicit val cpl = (cn1, cn2)
+
+      try {
+        val cr1 = new ClassReader(i1)
+        val cr2 = new ClassReader(i2)
+        cr1.accept(cn1, 0)
+        cr2.accept(cn2, 0)
+      } catch {
+        case e: Exception => Console.err.println("Failed to parse class files.")
+      }
+
+      (cn1, cn2)
+    } finally {
+      if (i1 != null)
+        i1.close()
+      if (i2 != null)
+        i2.close()
+    }
+  }
+
   def diff() {
-    val i1 = new FileInputStream(f1)
-    val i2 = new FileInputStream(f2)
 
-    val cn1 = new ClassNode()
-    val cn2 = new ClassNode()
-    implicit val cpl = (cn1, cn2)
-
-    val cr1 = new ClassReader(i1)
-    val cr2 = new ClassReader(i2)
-    cr1.accept(cn1, 0);
-    cr2.accept(cn2, 0);
-    i1.close();
-    i1.close();
+    implicit val cn@(cn1, cn2) = prepare()
 
     // header
     println(s"bcdiff ${f1.getPath} ${f2.getPath}")
@@ -77,27 +96,31 @@ class ClassDiffer(f1: File, f2: File, color: Boolean) {
       val met1 = methods1(s)
       val met2 = methods2(s)
 
-      import JavaConversions._
+      diffMethods(met1, met2)
+    }
+  }
 
-      // gets the content of the method
-      def collectIns(m: MethodNode) = {
-        m.instructions.iterator().asInstanceOf[ListIterator[AbstractInsnNode]].
-          filter(t => t.getType != AbstractInsnNode.FRAME && t.getType != AbstractInsnNode.LINE).map(ByteCode.convert).toArray
-      }
+  private def diffMethods(met1: MethodNode, met2: MethodNode) {
+    import JavaConversions._
 
-      val in1 = collectIns(met1)
-      val in2 = collectIns(met2)
+    // gets the content of the method
+    def collectIns(m: MethodNode) = {
+      m.instructions.iterator().asInstanceOf[ListIterator[AbstractInsnNode]].
+        filter(t => t.getType != AbstractInsnNode.FRAME && t.getType != AbstractInsnNode.LINE).map(ByteCode.convert).toArray
+    }
 
-      val d = new Diff(in1, in2)
-      val diff = d.diff()
+    val in1 = collectIns(met1)
+    val in2 = collectIns(met2)
 
-      // print nothing if there are no differences
-      if (diff.exists(_ != Keep)) {
-        println()
-        println(s" Method ${met1.name} // ${met1.desc}")
+    val d = new Diff(in1, in2)
+    val diff = d.diff()
 
-        d.formatChanges(diff, color)
-      }
+    // print nothing if there are no differences
+    if (diff.exists(_ != Keep)) {
+      println()
+      println(s" Method ${met1.name} // ${met1.desc}")
+
+      d.formatChanges(diff, color)
     }
   }
 
