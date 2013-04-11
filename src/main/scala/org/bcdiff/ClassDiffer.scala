@@ -65,26 +65,33 @@ class ClassDiffer(f1: File, f2: File, color: Boolean) {
     val only1 = methods1 -- same;
     val only2 = methods2 -- same;
 
+    // added / removed methods
     val prettyM: ((String, MethodNode)) => String = a =>
-      s"Method ${a._2.name} | ${a._1} | ${a._2.instructions.size()} instructions"
+      s"Method ${a._2.name} // ${a._2.desc} | ${a._2.instructions.size()} instructions"
 
     only1.foreach(a => removed((a._1._2, a._2), prettyM))
     only2.foreach(a => added((a._1._2, a._2), prettyM))
 
+    // methods with identical name+signature --> diff
     for (s <- same) {
       val met1 = methods1(s)
       val met2 = methods2(s)
 
       import JavaConversions._
 
-      val in1 = met1.instructions.iterator().asInstanceOf[ListIterator[AbstractInsnNode]].
-        filter(t => t.getType != AbstractInsnNode.FRAME && t.getType != AbstractInsnNode.LINE).map(ByteCode.convert).toArray
-      val in2 = met2.instructions.iterator().asInstanceOf[ListIterator[AbstractInsnNode]].
-        filter(t => t.getType != AbstractInsnNode.FRAME && t.getType != AbstractInsnNode.LINE).map(ByteCode.convert).toArray
+      // gets the content of the method
+      def collectIns(m: MethodNode) = {
+        m.instructions.iterator().asInstanceOf[ListIterator[AbstractInsnNode]].
+          filter(t => t.getType != AbstractInsnNode.FRAME && t.getType != AbstractInsnNode.LINE).map(ByteCode.convert).toArray
+      }
+
+      val in1 = collectIns(met1)
+      val in2 = collectIns(met2)
 
       val d = new Diff(in1, in2)
       val diff = d.diff()
 
+      // print nothing if there are no differences
       if (diff.exists(_ != Keep)) {
         println()
         println(s" Method ${met1.name} // ${met1.desc}")
@@ -172,7 +179,7 @@ class ClassDiffer(f1: File, f2: File, color: Boolean) {
     }
   }
 
-  private def toS[T](t:T) = t.toString
+  private def toS[T](t: T) = t.toString
 
   private def added[T](s: T, pretty: T => String = toS[T] _) {
     if (color) {
@@ -182,7 +189,7 @@ class ClassDiffer(f1: File, f2: File, color: Boolean) {
     }
   }
 
- private def removed[T](s: T, pretty: T => String = toS[T] _) {
+  private def removed[T](s: T, pretty: T => String = toS[T] _) {
     if (color) {
       Console.println(Console.RED + Console.BOLD + "-" + pretty(s) + Console.RESET)
     } else {
