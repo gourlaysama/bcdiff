@@ -187,6 +187,8 @@ case class ZeroOp(opCode: Int) extends ByteCode {
       case RETURN => "return"
       case ARRAYLENGTH => "arraylength"
       case ATHROW => "athrow"
+      case MONITORENTER => "monitorenter"
+      case MONITOREXIT => "monitorexit"
     }
   }
 }
