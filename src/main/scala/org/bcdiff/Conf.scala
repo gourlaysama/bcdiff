@@ -10,12 +10,12 @@ import org.rogach.scallop.ScallopConf
 class Conf(arg: Seq[String]) extends ScallopConf(arg) {
   val jj = System.getProperty("java.version")
   val jvm = System.getProperty("java.vm.name") + " " + System.getProperty("java.vm.version")
-  version(s"bcdiff - JVM bytecode diff tool (c) 2013 Antoine Gourlay\nversion 0.1-SNAPSHOT ($jj $jvm)")
+  version(s"${BuildInfo.name} - JVM bytecode diff tool (c) 2013 Antoine Gourlay\nversion ${BuildInfo.version} ($jj $jvm)")
   banner(
-    """
-      |Usage: bcdiff [options] file1.class file2.class
+   s"""
+      |Usage: ${BuildInfo.name} [options] file1.class file2.class
       |
-      |bcdiff is a JVM bytecode diff tool.
+      |${BuildInfo.name} is a JVM bytecode diff tool.
       |By default, it diffs two class files and prints on the console a readable diff.
       |
       |Options:
