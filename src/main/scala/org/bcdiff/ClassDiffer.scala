@@ -91,9 +91,10 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, typ: DiffType) {
       // TODO: fields
       // TODO: attributes
       // TODO: inner classes
+
+      println()
     }
 
-    println()
     // methods
     val methods1 = uglyCast[MethodNode](cn1.methods).map(a => ((a.name, a.desc), a)).toMap;
     val methods2 = uglyCast[MethodNode](cn2.methods).map(a => ((a.name, a.desc), a)).toMap;
@@ -104,7 +105,7 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, typ: DiffType) {
 
     // added / removed methods
     val prettyM: ((String, MethodNode)) => String = a =>
-      s"Method ${a._2.name} // ${a._2.desc} | ${a._2.instructions.size()} instructions"
+      s"Method ${a._2.name} // Signature: ${a._2.desc} | ${a._2.instructions.size()} instructions"
 
     if (typ == Full) {
       only1.foreach(a => removed((a._1._2, a._2), prettyM))
@@ -154,7 +155,7 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, typ: DiffType) {
     if (modified) {
       if (typ == Full) {
         println()
-        println(s" Method ${met1.name} // ${met1.desc}")
+        println(s" Method ${met1.name} // Signature: ${met1.desc}")
 
         d.formatChanges(diff, color)
       } else if (typ == Stat) {
@@ -177,7 +178,7 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, typ: DiffType) {
         } else {
           print("  " + total + " " + pl.mkString + mn.mkString)
         }
-        println(s" | Method ${met1.name} // ${met1.desc}")
+        println(s" | Method ${met1.name} // Signature: ${met1.desc}")
       }
     }
 

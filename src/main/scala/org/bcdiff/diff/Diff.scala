@@ -164,7 +164,7 @@ private[bcdiff] class Diff(val a: Array[ByteCode], val b: Array[ByteCode], val a
       // accumulate equivalent labels
       @tailrec
       def acc(i: Int, j: Int, ch: List[Change]) {
-        (alab.get(i), blab.get(i)) match {
+        (alab.get(i), blab.get(j)) match {
           case (Some(l1), Some(l2)) => eqlabs = eqlabs + (l1 -> l2)
           case _ =>
         }
