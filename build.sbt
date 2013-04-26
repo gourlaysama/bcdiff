@@ -1,5 +1,7 @@
 import com.typesafe.sbt.SbtStartScript
 
+import xerial.sbt.Pack._
+
 name := "bcdiff"
 
 version := "0.2-SNAPSHOT"
@@ -23,3 +25,7 @@ sourceGenerators in Compile <+= buildInfo
 buildInfoKeys := Seq[BuildInfoKey](name, version)
 
 buildInfoPackage := "org.bcdiff"
+
+packSettings
+
+packMain <<= name(n => Map(n -> "org.bcdiff.Main"))
