@@ -78,7 +78,7 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, typ: DiffType) {
       println()
 
       // basic fields
-      compareField(_.version)
+      compareFieldPretty(_.version)(v => "Bytecode version: " + v)
       compareFieldPretty(_.name)(n => "Name: " + clazzN(n))
       compareFieldPretty(_.superName)(n => "Parent class: " + clazzN(n))
 
@@ -93,6 +93,7 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, typ: DiffType) {
       // TODO: inner classes
     }
 
+    println()
     // methods
     val methods1 = uglyCast[MethodNode](cn1.methods).map(a => ((a.name, a.desc), a)).toMap;
     val methods2 = uglyCast[MethodNode](cn2.methods).map(a => ((a.name, a.desc), a)).toMap;
