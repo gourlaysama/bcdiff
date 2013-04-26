@@ -22,7 +22,9 @@ object ClassDiffer {
 }
 
 /**
- * ...
+ * Diff two class files.
+ *
+ * This class does not keep any state.
  *
  * @author Antoine Gourlay
  */
@@ -280,13 +282,10 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, typ: DiffType) {
   private def clazzN(s: String) = s.replace('/', '.')
 
   /**
-   * Converts a java non-generic list to a scala List[T].
+   * Converts a java non-generic list to a scala Seq[T].
+   * Thank you ASM for still supporting Java 1.2 and below.
    *
    * A kitten dies every time this method is called.
-   *
-   * @param l
-   * @tparam T
-   * @return
    */
   private def uglyCast[T](l: java.util.List[_]): Seq[T] = {
     import scala.collection.JavaConverters._

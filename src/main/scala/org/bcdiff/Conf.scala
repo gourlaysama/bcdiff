@@ -3,7 +3,7 @@ package org.bcdiff
 import org.rogach.scallop.ScallopConf
 
 /**
- * ...
+ * Command line argument configuration.
  *
  * @author Antoine Gourlay
  */
