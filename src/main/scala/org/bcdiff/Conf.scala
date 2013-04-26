@@ -25,8 +25,6 @@ class Conf(arg: Seq[String]) extends ScallopConf(arg) {
   // options
   val stat = opt[Boolean](descr = "Generate a diffstat.", noshort = true)
   val shortstat = opt[Boolean](descr = "output only the last line of --stat containing the number of added/modified/deleted entries.", noshort = true)
-  val constantpool = opt[Boolean](default = Some(true), descr = "Diff the contents of the constant pool.",
-    noshort = true)
   val color = toggle("color", default = Some(true), descrYes = "Show colored diff.", descrNo = "Turn off colored diff.")
 
   val files = trailArg[List[String]](descr = "Class files to diff (exactly 2)", required = true)
