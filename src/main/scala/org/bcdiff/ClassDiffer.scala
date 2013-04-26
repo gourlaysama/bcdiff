@@ -113,7 +113,7 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, typ: DiffType) {
     }
 
     // methods with identical name+signature --> diff
-    val modcount = same.map{s => diffMethods(methods1(s), methods2(s))}.count(_ == true)
+    val modcount = same.toSeq.map{s => diffMethods(methods1(s), methods2(s))}.count(_ == true)
 
     if (typ != Full) {
       println(s"${only1.size} methods removed, ${only2.size} added, $modcount modified")
@@ -173,12 +173,21 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, typ: DiffType) {
         val pl = Stream.fill(addsize)('+')
         val mn = Stream.fill(10 - addsize)('-')
 
-        if (color) {
-          print("  " + total + " " + Console.GREEN + Console.BOLD + pl.mkString + Console.RED + mn.mkString + Console.RESET)
-        } else {
-          print("  " + total + " " + pl.mkString + mn.mkString)
+        def intPrint(i: Int): String = {
+          if (i < 10)
+            s"  $i"
+          else if (i < 100)
+            s" $i"
+          else
+            i.toString
         }
-        println(s" | Method ${met1.name} // Signature: ${met1.desc}")
+
+        if (color) {
+          print(intPrint(total) + " " + Console.GREEN + Console.BOLD + pl.mkString + Console.RED + mn.mkString + Console.RESET)
+        } else {
+          print(intPrint(total) + " " + pl.mkString + mn.mkString)
+        }
+        println(s" | ${met1.name} // Signature: ${met1.desc}")
       }
     }
 
