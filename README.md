@@ -51,6 +51,12 @@ Running `bcdiff --stat` on the `scala.Enumeration` class file between Scala 2.9.
 
 # Installation
 
+## Last release
+
+The last (and only) release is [bcdiff 0.1 (tar.gz)](http://static.antoine.gourlay.fr/bcdiff/releases/bcdiff-0.1.tgz) ([md5](http://static.antoine.gourlay.fr/bcdiff/releases/bcdiff-0.1.tgz.md5)).
+
+Download, extract and run `bin/bcdiff`.
+
 ## Latest version from source
 
 Just compile and generate a launch script:
@@ -71,7 +77,7 @@ And then use `bcdiff` anywhere.
 
 # Notes
 
-bcdiff is new and quite experimental, and many things are expected to change (to improve, hopefully). It is also very manually tested, do not depend on it for anything serious.
+bcdiff is quite experimental, and many things are expected to change (and improve, hopefully). It is also very manually tested; do not depend on it for anything serious.
 
 Future versions may include, in no particular order:
  * proper testing. I do not feel like commiting loads of class files as test resources, so this will require compiling java/scala classes on the fly and matching the output to an expected (textual?) output,
@@ -82,7 +88,7 @@ Future versions may include, in no particular order:
  * maybe allow diffing directories (diff class files with the same names on both sides)?
  * maybe look into nailgun to get rid of that pesky JVM start overhead :-)
 
-An idea, a suggestion, an issue? Please open an issue on GitHub or ring me on twitter ([@gourlaysama](https://twitter.com/gourlaysama).
+An idea, a suggestion, an issue? Please open an issue on GitHub or ring me on twitter ([@gourlaysama](https://twitter.com/gourlaysama)).
 
 # License
 
