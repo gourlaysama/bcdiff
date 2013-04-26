@@ -267,7 +267,7 @@ case class InvokeDynOp(name: String, desc: String, mHandle: Handle, params: Seq[
 
 case class JumpOp(opCode: Int, label: Label) extends ByteCode {
   override def toString = {
-    val a = opCode match {
+    opCode match {
       case IFEQ => "ifeq "
       case IFNE => "ifne "
       case IFGE => "ifge "
@@ -286,8 +286,6 @@ case class JumpOp(opCode: Int, label: Label) extends ByteCode {
       case IFNULL => "ifnull "
       case IFNONNULL => "ifnonnull "
     }
-
-    s"$a $label"
   }
 }
 

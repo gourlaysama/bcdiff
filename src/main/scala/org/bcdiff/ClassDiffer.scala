@@ -3,7 +3,7 @@ package org.bcdiff
 import diff.Diff
 import java.io.{FileInputStream, File}
 import org.objectweb.asm.tree._
-import org.objectweb.asm.ClassReader
+import org.objectweb.asm.{Label, ClassReader}
 import collection.JavaConversions
 import java.util.ListIterator
 import Diff._
@@ -121,16 +121,30 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, typ: DiffType) {
 
     // gets the content of the method
     def collectIns(m: MethodNode) = {
-      m.instructions.iterator().asInstanceOf[ListIterator[AbstractInsnNode]].
-        filter(t => t.getType != AbstractInsnNode.FRAME && t.getType != AbstractInsnNode.LINE).map(ByteCode.convert).toArray
+      val ins = m.instructions.iterator().asInstanceOf[ListIterator[AbstractInsnNode]].
+        filter(t => t.getType != AbstractInsnNode.FRAME && t.getType != AbstractInsnNode.LINE).map(ByteCode.convert).toSeq
+
+      // we will need the mapping from a label to the next element
+      var ct = -1
+      var idx = Map[Label, Int]()
+
+      ins foreach {
+        case LabelOp(l) =>
+          idx = idx + (l -> (ct + 1))
+        case _ =>
+          ct = ct + 1
+      }
+
+      val fins = ins.filterNot(_.isInstanceOf[LabelOp]).toArray
+
+      (fins, idx.map(a => (a._2, a._1)).toMap, idx)
     }
 
-    val in1 = collectIns(met1)
-    val in2 = collectIns(met2)
+    val (in1, lab1, rlab1) = collectIns(met1)
+    val (in2, lab2, rlab2) = collectIns(met2)
 
-    val d = new Diff(in1, in2)
+    val d = new Diff(in1, in2, lab1, lab2, rlab1, rlab2)
     val diff = d.diff()
-
     val modified = diff.exists(_ != Keep)
 
     // print nothing if there are no differences
