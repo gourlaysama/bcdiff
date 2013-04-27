@@ -135,7 +135,7 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, typ: DiffType) {
     if (modified) {
       if (typ == Full) {
         println()
-        println(s" Method ${met1.name} // Signature: ${met1.desc}")
+        println(s"@@ Method ${met1.name} // Signature: ${met1.desc}")
 
         // diff access flags
         compareAccessFlags(met1.access, met2.access)

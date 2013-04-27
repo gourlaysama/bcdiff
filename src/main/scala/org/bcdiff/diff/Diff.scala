@@ -232,19 +232,19 @@ private[bcdiff] class Diff(ains: InsnList, bins: InsnList) {
 
     def added(pos: Int, s: String) {
       if (color) {
-        Console.println(Console.GREEN + Console.BOLD + "  + " + Console.RESET + Console.GREEN + intPrint(pos) + ": "
+        Console.println(Console.GREEN + Console.BOLD + "+ " + Console.RESET + Console.GREEN + intPrint(pos) + ": "
           + Console.BOLD + s + Console.RESET)
       } else {
-        println("  + " + intPrint(pos) + ": " + s)
+        println("+ " + intPrint(pos) + ": " + s)
       }
     }
 
     def removed(pos: Int, s: String) {
       if (color) {
-        Console.println(Console.RED + Console.BOLD + "  - " + Console.RESET + Console.RED + intPrint(pos) + ": "
+        Console.println(Console.RED + Console.BOLD + "- " + Console.RESET + Console.RED + intPrint(pos) + ": "
           + Console.BOLD + s + Console.RESET)
       } else {
-        println("  - " + intPrint(pos) + ": " + s)
+        println("- " + intPrint(pos) + ": " + s)
       }
     }
 
@@ -266,8 +266,8 @@ private[bcdiff] class Diff(ains: InsnList, bins: InsnList) {
         j = j + 1
         b(j) match {
           case c@JumpOp(_, l) =>
-            println("    " + intPrint(j) + ": " + c + bpos.get(l).orElse(apos.get(l)).map(_.toString + ":").getOrElse("???"))
-          case c => println(s"    ${intPrint(j)}: $c")
+            println("  " + intPrint(j) + ": " + c + bpos.get(l).orElse(apos.get(l)).map(_.toString + ":").getOrElse("???"))
+          case c => println(s"  ${intPrint(j)}: $c")
         }
       case Insert =>
         j = j + 1

@@ -42,7 +42,34 @@ And diffing the resulting class files:
 bcdiff Test3.class Test4.class
 ```
 
-![Result of bcdiff](http://static.antoine.gourlay.fr/bcdiff/images/readme1.png)
+```diff
+bcdiff Test3.class Test4.class
+--- Test3.class
++++ Test4.class
+
+- Name: Test3
++ Name: Test4
+
+
+@@ Method test // Signature: (I)D
++   0: getstatic  // Field java/lang/System.out:Ljava/io/PrintStream;
++   1: iload 1
++   2: invokevirtual  // Method java/io/PrintStream.println:(I)V
+    3: iload 1
+    4: bipush 42
+    5: if_icmpge 11:
++   6: iload 1
++   7: iconst_2
++   8: isub
++   9: istore 1
+-   3: iinc 1, 1
+   10: goto 3:
+   11: iload 1
+   12: iconst_2
+   13: isub
+   14: i2d
+   15: dreturn
+```
 
 ## Example with `--stat`
 
