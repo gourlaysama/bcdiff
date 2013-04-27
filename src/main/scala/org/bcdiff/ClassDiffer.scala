@@ -125,9 +125,11 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, typ: DiffType) {
 
   private def diffMethods(met1: MethodNode, met2: MethodNode): Boolean = {
 
+
     val d = new Diff(met1.instructions, met2.instructions)
     val diff = d.diff()
-    val modified = diff.exists(_ != Keep)
+    val accessmodified = getFlags(met1.access) != getFlags(met2.access)
+    val modified = diff.exists(_ != Keep) || accessmodified
 
     // print nothing if there are no differences
     if (modified) {
@@ -135,6 +137,10 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, typ: DiffType) {
         println()
         println(s" Method ${met1.name} // Signature: ${met1.desc}")
 
+        // diff access flags
+        compareAccessFlags(met1.access, met2.access)
+
+        // pretty print bytecode diff
         d.formatChanges(diff, color)
       } else if (typ == Stat) {
         var kp = 0
@@ -147,9 +153,13 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, typ: DiffType) {
         }
 
         val total = ins + rem
-        val addsize = Math.ceil(10 * ins / total).toInt
-        val pl = Stream.fill(addsize)('+')
-        val mn = Stream.fill(10 - addsize)('-')
+        val (pl, mn) = if (ins + rem != 0) {
+          val s = Math.ceil(10 * ins / total).toInt
+          (Stream.fill(s)('+'),
+            Stream.fill(10 - s)('-'))
+        } else {
+          (Stream.empty, Stream.fill(10)(' '))
+        }
 
         def intPrint(i: Int): String = {
           if (i < 10)
@@ -165,17 +175,24 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, typ: DiffType) {
         } else {
           print(intPrint(total) + " " + pl.mkString + mn.mkString)
         }
-        println(s" | ${met1.name} // Signature: ${met1.desc}")
+        print(s" | ${met1.name} // Signature: ${met1.desc}")
+        if (accessmodified) {
+          println("  ; access flags changed")
+        } else {
+          println()
+        }
       }
     }
 
     modified
   }
 
+  private def getFlags(a: Int): Set[Int] = {
+    ByteCode.access_flags.keySet.filter(k => (a & k) != 0)
+  }
+
   private def compareAccessFlags(a1: Int, a2: Int) {
-    def getFlags(a: Int): Set[Int] = {
-      ByteCode.access_flags.keySet.filter(k => (a & k) != 0)
-    }
+
     val v1 = getFlags(a1)
     val v2 = getFlags(a2)
 
