@@ -3,9 +3,7 @@ package org.bcdiff
 import diff.Diff
 import java.io.{FileInputStream, File}
 import org.objectweb.asm.tree._
-import org.objectweb.asm.{Label, ClassReader}
-import collection.JavaConversions
-import java.util.ListIterator
+import org.objectweb.asm.ClassReader
 import Diff._
 import org.bcdiff.ClassDiffer._
 
@@ -30,36 +28,39 @@ object ClassDiffer {
  */
 class ClassDiffer(f1: File, f2: File, color: Boolean, typ: DiffType) {
 
+  // reads and makes sure we have valid class files
   private def prepare(): (ClassNode, ClassNode) = {
-    var i1: FileInputStream = null
-    var i2: FileInputStream = null
 
-    try {
-      i1 = new FileInputStream(f1)
-      i2 = new FileInputStream(f2)
-
-      val cn1 = new ClassNode()
-      val cn2 = new ClassNode()
-      implicit val cpl = (cn1, cn2)
-
+    def safeOpen[A](f: File)(content: FileInputStream => A): A = {
+      var r: FileInputStream = null
       try {
-        val cr1 = new ClassReader(i1)
-        val cr2 = new ClassReader(i2)
-        cr1.accept(cn1, 0)
-        cr2.accept(cn2, 0)
+        r = new FileInputStream(f)
+        content(r)
       } catch {
-        case e: Exception => Console.err.println("Failed to parse class files.")
+        case e: Exception =>
+          Console.err.println(s"Failed to parse class file '${f.getAbsolutePath}'.")
+          sys.exit(1)
+          null.asInstanceOf[A] // hum... how can I get rid of that?
+      } finally {
+        if (r != null) {
+          r.close()
+        }
       }
-
-      (cn1, cn2)
-    } finally {
-      if (i1 != null)
-        i1.close()
-      if (i2 != null)
-        i2.close()
     }
+
+    def read(i: FileInputStream): ClassNode = {
+      val cn = new ClassNode()
+      val cr = new ClassReader(i)
+      cr.accept(cn, 0)
+      cn
+    }
+
+    (safeOpen(f1)(read), safeOpen(f2)(read))
   }
 
+  /**
+   * Diffs the two class files.
+   */
   def diff() {
 
     implicit val cn@(cn1, cn2) = prepare()
@@ -78,14 +79,14 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, typ: DiffType) {
       println()
 
       // basic fields
-      compareFieldPretty(_.version)(v => "Bytecode version: " + v)
-      compareFieldPretty(_.name)(n => "Name: " + clazzN(n))
-      compareFieldPretty(_.superName)(n => "Parent class: " + clazzN(n))
+      compareFieldPretty(_.version)("Bytecode version: " + _)
+      compareFieldPretty(_.name)("Name: " + clazzN(_))
+      compareFieldPretty(_.superName)("Parent class: " + clazzN(_))
 
       // advanced fields
       compareAccessFlags(cn1.access, cn2.access)
       compareInterfaces(uglyCast(cn1.interfaces), uglyCast(cn2.interfaces))
-      compareFieldPretty(_.outerClass)(n => "Outer class: " + clazzN(n))
+      compareFieldPretty(_.outerClass)("Outer class: " + clazzN(_))
       // TODO: annotations
 
       // TODO: fields
@@ -96,12 +97,12 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, typ: DiffType) {
     }
 
     // methods
-    val methods1 = uglyCast[MethodNode](cn1.methods).map(a => ((a.name, a.desc), a)).toMap;
-    val methods2 = uglyCast[MethodNode](cn2.methods).map(a => ((a.name, a.desc), a)).toMap;
+    val methods1 = uglyCast[MethodNode](cn1.methods).map(a => ((a.name, a.desc), a)).toMap
+    val methods2 = uglyCast[MethodNode](cn2.methods).map(a => ((a.name, a.desc), a)).toMap
 
     val same = methods1.keySet.intersect(methods2.keySet)
-    val only1 = methods1 -- same;
-    val only2 = methods2 -- same;
+    val only1 = methods1 -- same
+    val only2 = methods2 -- same
 
     // added / removed methods
     val prettyM: ((String, MethodNode)) => String = a =>
@@ -113,41 +114,18 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, typ: DiffType) {
     }
 
     // methods with identical name+signature --> diff
-    val modcount = same.toSeq.map{s => diffMethods(methods1(s), methods2(s))}.count(_ == true)
+    val modcount = same.toSeq.map {
+      s => diffMethods(methods1(s), methods2(s))
+    }.count(_ == true)
 
     if (typ != Full) {
       println(s"${only1.size} methods removed, ${only2.size} added, $modcount modified")
     }
   }
 
-  private def diffMethods(met1: MethodNode, met2: MethodNode): Boolean =  {
-    import JavaConversions._
+  private def diffMethods(met1: MethodNode, met2: MethodNode): Boolean = {
 
-    // gets the content of the method
-    def collectIns(m: MethodNode) = {
-      val ins = m.instructions.iterator().asInstanceOf[ListIterator[AbstractInsnNode]].
-        filter(t => t.getType != AbstractInsnNode.FRAME && t.getType != AbstractInsnNode.LINE).map(ByteCode.convert).toSeq
-
-      // we will need the mapping from a label to the next element
-      var ct = -1
-      var idx = Map[Label, Int]()
-
-      ins foreach {
-        case LabelOp(l) =>
-          idx = idx + (l -> (ct + 1))
-        case _ =>
-          ct = ct + 1
-      }
-
-      val fins = ins.filterNot(_.isInstanceOf[LabelOp]).toArray
-
-      (fins, idx.map(a => (a._2, a._1)).toMap, idx)
-    }
-
-    val (in1, lab1, rlab1) = collectIns(met1)
-    val (in2, lab2, rlab2) = collectIns(met2)
-
-    val d = new Diff(in1, in2, lab1, lab2, rlab1, rlab2)
+    val d = new Diff(met1.instructions, met2.instructions)
     val diff = d.diff()
     val modified = diff.exists(_ != Keep)
 
@@ -205,7 +183,6 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, typ: DiffType) {
       val pretty: Set[Int] => String = if (color) {
         val rem = v1 -- v2
         val add = v2 -- v1
-        val int = v1.intersect(v2)
 
         x => "Flags: " + x.map {
           i =>
@@ -235,7 +212,6 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, typ: DiffType) {
       val pretty: Set[String] => String = if (color) {
         val rem = v1 -- v2
         val add = v2 -- v1
-        val int = v1.intersect(v2)
 
         x => "Implemented interfaces: " + x.map {
           i =>
@@ -259,10 +235,6 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, typ: DiffType) {
 
   private def compareFieldPretty[T](f: ClassNode => T)(pretty: T => String)(implicit cn: (ClassNode, ClassNode)) {
     check(f(cn._1), f(cn._2))(pretty)
-  }
-
-  private def compareField[T](f: ClassNode => T)(implicit cn: (ClassNode, ClassNode)) {
-    check(f(cn._1), f(cn._2))(_.toString)
   }
 
   private def check[T](v1: T, v2: T)(pretty: T => String) {

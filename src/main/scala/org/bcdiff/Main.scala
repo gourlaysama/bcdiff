@@ -1,11 +1,10 @@
 package org.bcdiff
 
-import org.rogach.scallop.ScallopConf
 import java.io.File
 import org.bcdiff.ClassDiffer.{Full, Stat, Shortstat}
 
 /**
- * ..
+ * Main entry point.
  *
  * @author Antoine Gourlay
  */

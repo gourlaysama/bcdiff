@@ -3,6 +3,9 @@ package org.bcdiff.diff
 import org.bcdiff.{JumpOp, LabelOp, ByteCode}
 import org.objectweb.asm.Label
 import annotation.tailrec
+import org.objectweb.asm.tree.{InsnList, AbstractInsnNode}
+import java.util.ListIterator
+import collection.JavaConversions
 
 object Diff {
 
@@ -17,20 +20,21 @@ object Diff {
 }
 
 /**
- * Diff two byte code arrays.
- *
- * The assumption about the arrays is that they do not contain Labels, Frames or Lines.
- * For each array a and b, (a/b)lab and (a/b)pos represent the mapping Label <-> Position (instruction number).
+ * Diff two byte code instruction lists from ASM.
  *
  * @author Antoine Gourlay
  */
-private[bcdiff] class Diff(val a: Array[ByteCode], val b: Array[ByteCode], val alab: Map[Int, Label], val blab: Map[Int, Label], val apos: Map[Label, Int],
-            val bpos: Map[Label, Int]) {
+private[bcdiff] class Diff(ains: InsnList, bins: InsnList) {
 
   import Diff._
 
   // equivalent labels found during the first diff pass
   private var eqlabs = Map[Label, Label]()
+
+  // the actual data we operate on
+  // (list of bytecode, map(line number -> label), map(label -> line number))
+  private val (a, alab, apos) = collectIns(ains)
+  private val (b, blab, bpos) = collectIns(bins)
 
   // a step in the diff algorithm.
   private case class Point(x: Int, y: Int, changes: List[Change]) {
@@ -47,9 +51,32 @@ private[bcdiff] class Diff(val a: Array[ByteCode], val b: Array[ByteCode], val a
         false
       else {
         val ppt = pt.asInstanceOf[Point]
-        ppt.x == x && ppt.y == y
+        ppt.x == x && ppt.y == y // ignore the list of changes when checking for equality!
       }
     }
+  }
+
+  // gets the content of the method in the way we want it
+  private def collectIns(ml: InsnList) = {
+    import JavaConversions._
+
+    val ins = ml.iterator().asInstanceOf[ListIterator[AbstractInsnNode]].
+      filter(t => t.getType != AbstractInsnNode.FRAME && t.getType != AbstractInsnNode.LINE).map(ByteCode.convert).toSeq
+
+    // we will need the mapping from a label to the next element
+    var ct = -1
+    var idx = Map[Label, Int]()
+
+    ins foreach {
+      case LabelOp(l) =>
+        idx = idx + (l -> (ct + 1))
+      case _ =>
+        ct = ct + 1
+    }
+
+    val fins = ins.filterNot(_.isInstanceOf[LabelOp]).toArray
+
+    (fins, idx.map(a => (a._2, a._1)).toMap, idx)
   }
 
   /**
@@ -59,6 +86,8 @@ private[bcdiff] class Diff(val a: Array[ByteCode], val b: Array[ByteCode], val a
 
 
   private def diff(rangeA: (Int, Int), rangeB: (Int, Int), eqlbs: Option[Map[Label, Label]] = None): Seq[Change] = {
+    // we start at the last character, going backwards until we reach position (0,0) (or the equivalent in the
+    // given ranges)
 
     // move left (== removals)
     def left(s: Map[Int, Point]): Map[Int, Point] = {
@@ -98,14 +127,16 @@ private[bcdiff] class Diff(val a: Array[ByteCode], val b: Array[ByteCode], val a
       }
     }
 
-    // matching test method
-    val matches: (ByteCode, ByteCode) => Boolean = eqlbs.map{ m =>
-      (a: ByteCode,b: ByteCode) => (a,b) match {
-        case (JumpOp(op, l), JumpOp(op2, l2)) if op == op2 =>
-          m.get(l).map(_.toString == l2.toString).getOrElse(false)
-        case _ => a == b
-      }
-    }.getOrElse((a: ByteCode, b:ByteCode) => a == b)
+    // matching test method:
+    // in the case of the second pass, we add the special test for equality for JumpOp (label-aware test)
+    val matches: (ByteCode, ByteCode) => Boolean = eqlbs.map {
+      m =>
+        (a: ByteCode, b: ByteCode) => (a, b) match {
+          case (JumpOp(op, l), JumpOp(op2, l2)) if op == op2 =>
+            m.get(l).map(_.toString == l2.toString).getOrElse(false)
+          case _ => a == b
+        }
+    }.getOrElse((a: ByteCode, b: ByteCode) => a == b)
 
     // move along a diagonal (== matches)
     def slide(s: Map[Int, Point]): Map[Int, Point] = {
@@ -137,7 +168,7 @@ private[bcdiff] class Diff(val a: Array[ByteCode], val b: Array[ByteCode], val a
     // special case of equal inputs
     var changes: List[Change] = state.head._2.changes
 
-    var stop: Boolean = state.values.exists(p => p.x == rangeA._1 - 1 && p.y == rangeB._1 - 1)
+    var stop: Boolean = state.values.exists(_ == end)
 
     // let's walk the matrix towards the top-left corner
     while (!stop) {
@@ -146,7 +177,6 @@ private[bcdiff] class Diff(val a: Array[ByteCode], val b: Array[ByteCode], val a
 
       // should never happen (but who knows...)
       if (res.isEmpty) throw new IllegalStateException()
-
 
       res.values.find(_ == end) match {
         case None =>
@@ -158,6 +188,7 @@ private[bcdiff] class Diff(val a: Array[ByteCode], val b: Array[ByteCode], val a
       state = res
     }
 
+    // first pass: None, second pass: Some(Map(...))
     if (eqlbs.isEmpty) {
       eqlabs = Map.empty
 
@@ -234,21 +265,23 @@ private[bcdiff] class Diff(val a: Array[ByteCode], val b: Array[ByteCode], val a
         i = i + 1
         j = j + 1
         b(j) match {
-          case a @ JumpOp(_, l) => println("    " + intPrint(j) + ": " + a + bpos.get(l).orElse(apos.get(l)).map(_.toString + ":").getOrElse("???"))
-          case a => println(s"    ${intPrint(j)}: $a")
+          case c@JumpOp(_, l) =>
+            println("    " + intPrint(j) + ": " + c + bpos.get(l).orElse(apos.get(l)).map(_.toString + ":").getOrElse("???"))
+          case c => println(s"    ${intPrint(j)}: $c")
         }
       case Insert =>
         j = j + 1
         b(j) match {
-          case a @ JumpOp(_, l) => added(j, a + bpos.get(l).map(_.toString + ":").getOrElse("???"))
-          case a => added(j, a.toString)
+          case c@JumpOp(_, l) => added(j, c + bpos.get(l).map(_.toString + ":").getOrElse("???"))
+          case c => added(j, c.toString)
         }
       case Remove =>
         i = i + 1
         a(i) match {
-            // TODO: find a way to visually differentiate old vs. new instruction number in jumps
-          case a @ JumpOp(_, l) => removed(i, a + eqlabs.get(l).flatMap(bpos.get).orElse(apos.get(l)).map(_.toString + ":").getOrElse("???"))
-          case a => removed(i, a.toString)
+          // TODO: find a way to visually differentiate old vs. new instruction number in jumps
+          case c@JumpOp(_, l) =>
+            removed(i, c + eqlabs.get(l).flatMap(bpos.get).orElse(apos.get(l)).map(_.toString + ":").getOrElse("???"))
+          case c => removed(i, c.toString)
         }
     }
   }

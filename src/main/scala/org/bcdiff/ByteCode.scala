@@ -5,11 +5,6 @@ import org.objectweb.asm.tree._
 import org.objectweb.asm.{Label, Handle}
 import java.util.{List => JList}
 
-/**
- * ...
- *
- * @author Antoine Gourlay
- */
 object ByteCode {
 
   val access_flags = Map(
@@ -61,7 +56,7 @@ object ByteCode {
       case INVOKEDYNAMIC =>
         val b = a.asInstanceOf[InvokeDynamicInsnNode]
         InvokeDynOp(b.name, b.desc, b.bsm, b.bsmArgs)
-      case op@ (NEW | NEWARRAY | ANEWARRAY | CHECKCAST | INSTANCEOF) => TypeOp(op, a.asInstanceOf[TypeInsnNode].desc)
+      case op@(NEW | NEWARRAY | ANEWARRAY | CHECKCAST | INSTANCEOF) => TypeOp(op, a.asInstanceOf[TypeInsnNode].desc)
       case MULTIANEWARRAY =>
         val b = a.asInstanceOf[MultiANewArrayInsnNode]
         MultiArrayOp(b.desc, b.dims)
