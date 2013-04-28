@@ -14,7 +14,7 @@ bcdiff supports:
 Compiling these two files:
 
 ```java
-class Test3 {
+public class Test3 implements java.io.Serializable {
   public double test(int i) {
     while (i < 42) {
       i++;
@@ -26,7 +26,7 @@ class Test3 {
 
 ```java
 class Test4 {
-  public double test(int i) {
+  private static double test(int i) {
     System.out.println(i);
     while (i < 42) {
       i = i - 2;
@@ -49,22 +49,35 @@ bcdiff Test3.class Test4.class
 
 - Name: Test3
 + Name: Test4
+- Flags: PUBLIC, SUPER
++ Flags: SUPER
+- Implemented interfaces: java/io/Serializable
 
+
+@@ Method <init> // Signature: ()V
+- Flags: PUBLIC
+    0: aload 0
+    1: invokespecial  // Method java/lang/Object.<init>:()V
+    2: return
 
 @@ Method test // Signature: (I)D
+- Flags: PUBLIC
++ Flags: PRIVATE, STATIC
 +   0: getstatic  // Field java/lang/System.out:Ljava/io/PrintStream;
-+   1: iload 1
++   1: iload 0
 +   2: invokevirtual  // Method java/io/PrintStream.println:(I)V
-    3: iload 1
+-   0: iload 1
++   3: iload 0
     4: bipush 42
     5: if_icmpge 11:
-+   6: iload 1
++   6: iload 0
 +   7: iconst_2
 +   8: isub
-+   9: istore 1
 -   3: iinc 1, 1
++   9: istore 0
    10: goto 3:
-   11: iload 1
++  11: iload 0
+-   5: iload 1
    12: iconst_2
    13: isub
    14: i2d
