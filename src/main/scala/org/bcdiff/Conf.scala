@@ -22,10 +22,13 @@ class Conf(arg: Seq[String]) extends ScallopConf(arg) {
     """.stripMargin)
   footer("\nFor the code and bug-tracker, see https://github.com/gourlaysama/bcdiff")
 
-  // options
+  // general options
   val stat = opt[Boolean](descr = "Generate a diffstat.", noshort = true)
   val shortstat = opt[Boolean](descr = "output only the last line of --stat containing the number of added/modified/deleted entries.", noshort = true)
-  val color = toggle("color", default = Some(true), descrYes = "Show colored diff (default).", descrNo = "Turn off colored diff.")
+  val color = toggle("color", default = Some(true), descrYes = "Show colored diff (default).", descrNo = "Turn off colored diff.", noshort = true)
+
+  val methods = toggle("methods", default = Some(true), descrYes = "Diff the flags and content (byte-codes) of methods (default)",
+  descrNo = "Do not diff methods", noshort = true)
 
   val files = trailArg[List[String]](descr = "Class files to diff (exactly 2)", required = true)
 

@@ -26,7 +26,7 @@ object ClassDiffer {
  *
  * @author Antoine Gourlay
  */
-class ClassDiffer(f1: File, f2: File, color: Boolean, typ: DiffType) {
+class ClassDiffer(f1: File, f2: File, color: Boolean, methods: Boolean, typ: DiffType) {
 
   // reads and makes sure we have valid class files
   private def prepare(): (ClassNode, ClassNode) = {
@@ -96,30 +96,32 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, typ: DiffType) {
       println()
     }
 
-    // methods
-    val methods1 = uglyCast[MethodNode](cn1.methods).map(a => ((a.name, a.desc), a)).toMap
-    val methods2 = uglyCast[MethodNode](cn2.methods).map(a => ((a.name, a.desc), a)).toMap
+    if (methods) {
+      // methods
+      val methods1 = uglyCast[MethodNode](cn1.methods).map(a => ((a.name, a.desc), a)).toMap
+      val methods2 = uglyCast[MethodNode](cn2.methods).map(a => ((a.name, a.desc), a)).toMap
 
-    val same = methods1.keySet.intersect(methods2.keySet)
-    val only1 = methods1 -- same
-    val only2 = methods2 -- same
+      val same = methods1.keySet.intersect(methods2.keySet)
+      val only1 = methods1 -- same
+      val only2 = methods2 -- same
 
-    // added / removed methods
-    val prettyM: ((String, MethodNode)) => String = a =>
-      s"Method ${a._2.name} // Signature: ${a._2.desc} | ${a._2.instructions.size()} instructions"
+      // added / removed methods
+      val prettyM: ((String, MethodNode)) => String = a =>
+        s"Method ${a._2.name} // Signature: ${a._2.desc} | ${a._2.instructions.size()} instructions"
 
-    if (typ == Full) {
-      only1.foreach(a => removed((a._1._2, a._2), prettyM))
-      only2.foreach(a => added((a._1._2, a._2), prettyM))
-    }
+      if (typ == Full) {
+        only1.foreach(a => removed((a._1._2, a._2), prettyM))
+        only2.foreach(a => added((a._1._2, a._2), prettyM))
+      }
 
-    // methods with identical name+signature --> diff
-    val modcount = same.toSeq.map {
-      s => diffMethods(methods1(s), methods2(s))
-    }.count(_ == true)
+      // methods with identical name+signature --> diff
+      val modcount = same.toSeq.map {
+        s => diffMethods(methods1(s), methods2(s))
+      }.count(_ == true)
 
-    if (typ != Full) {
-      println(s"${only1.size} methods removed, ${only2.size} added, $modcount modified")
+      if (typ != Full) {
+        println(s"${only1.size} methods removed, ${only2.size} added, $modcount modified")
+      }
     }
   }
 

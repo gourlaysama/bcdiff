@@ -35,7 +35,7 @@ object Main extends App {
     Full
   }
 
-  val di = new ClassDiffer(f1,f2, c.color(), typ)
+  val di = new ClassDiffer(f1,f2, c.color(), c.methods(), typ)
 
   di.diff()
 }
