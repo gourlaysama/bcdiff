@@ -84,7 +84,7 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, methods: Boolean, typ: Dif
       compareFieldPretty(_.superName)("Parent class: " + clazzN(_))
 
       // advanced fields
-      compareAccessFlags(cn1.access, cn2.access)
+      compareAccessFlags(cn1.access, cn2.access, ByteCode.class_access_flags)
       compareInterfaces(uglyCast(cn1.interfaces), uglyCast(cn2.interfaces))
       compareFieldPretty(_.outerClass)("Outer class: " + clazzN(_))
       // TODO: annotations
@@ -130,7 +130,7 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, methods: Boolean, typ: Dif
 
     val d = new Diff(met1.instructions, met2.instructions)
     val diff = d.diff()
-    val accessmodified = getFlags(met1.access) != getFlags(met2.access)
+    val accessmodified = getFlags(met1.access, ByteCode.method_access_flags) != getFlags(met2.access, ByteCode.method_access_flags)
     val modified = diff.exists(_ != Keep) || accessmodified
 
     // print nothing if there are no differences
@@ -140,7 +140,7 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, methods: Boolean, typ: Dif
         println(s"@@ Method ${met1.name} // Signature: ${met1.desc}")
 
         // diff access flags
-        compareAccessFlags(met1.access, met2.access)
+        compareAccessFlags(met1.access, met2.access, ByteCode.method_access_flags)
 
         // pretty print bytecode diff
         d.formatChanges(diff, color)
@@ -189,14 +189,14 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, methods: Boolean, typ: Dif
     modified
   }
 
-  private def getFlags(a: Int): Set[Int] = {
-    ByteCode.access_flags.keySet.filter(k => (a & k) != 0)
+  private def getFlags(a: Int, flags: Map[Int, String]): Set[Int] = {
+    flags.keySet.filter(k => (a & k) != 0)
   }
 
-  private def compareAccessFlags(a1: Int, a2: Int) {
+  private def compareAccessFlags(a1: Int, a2: Int, flags: Map[Int, String]) {
 
-    val v1 = getFlags(a1)
-    val v2 = getFlags(a2)
+    val v1 = getFlags(a1, flags)
+    val v2 = getFlags(a2, flags)
 
     if (v1 != v2) {
       val pretty: Set[Int] => String = if (color) {
@@ -206,15 +206,15 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, methods: Boolean, typ: Dif
         x => "Flags: " + x.map {
           i =>
             if (rem.contains(i))
-              Console.UNDERLINED + ByteCode.access_flags(i) + Console.RESET + Console.RED + Console.BOLD
+              Console.UNDERLINED + flags(i) + Console.RESET + Console.RED + Console.BOLD
             else if (add.contains(i))
-              Console.UNDERLINED + ByteCode.access_flags(i) + Console.RESET + Console.GREEN + Console.BOLD
+              Console.UNDERLINED + flags(i) + Console.RESET + Console.GREEN + Console.BOLD
             else
-              ByteCode.access_flags(i)
+              flags(i)
         }.mkString(", ")
 
       } else {
-        "Flags: " + _.map(ByteCode.access_flags.apply).mkString(", ")
+        "Flags: " + _.map(flags.apply).mkString(", ")
       }
 
       if (!v1.isEmpty) removed(v1, pretty)

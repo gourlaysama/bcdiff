@@ -7,24 +7,43 @@ import java.util.{List => JList}
 
 object ByteCode {
 
-  val access_flags = Map(
+  val method_access_flags = Map(
     ACC_PUBLIC -> "PUBLIC",
     ACC_PRIVATE -> "PRIVATE",
     ACC_PROTECTED -> "PROTECTED",
     ACC_STATIC -> "STATIC",
     ACC_FINAL -> "FINAL",
-    ACC_SUPER -> "SUPER",
     ACC_SYNCHRONIZED -> "SYNCHRONIZED",
-    ACC_VOLATILE -> "VOLATILE",
     ACC_BRIDGE -> "BRIDGE",
     ACC_VARARGS -> "VARARGS",
-    ACC_TRANSIENT -> "TRANSIENT",
     ACC_NATIVE -> "NATIVE",
-    ACC_INTERFACE -> "INTERFACE",
     ACC_ABSTRACT -> "ABSTRACT",
     ACC_STRICT -> "STRICT",
+    ACC_SYNTHETIC -> "SYNTHETIC"
+  )
+
+  val class_access_flags = Map(
+    ACC_PUBLIC -> "PUBLIC",
+    ACC_PRIVATE -> "PRIVATE",
+    ACC_PROTECTED -> "PROTECTED",
+    ACC_FINAL -> "FINAL",
+    ACC_SUPER -> "SUPER",
+    ACC_INTERFACE -> "INTERFACE",
+    ACC_ABSTRACT -> "ABSTRACT",
     ACC_SYNTHETIC -> "SYNTHETIC",
     ACC_ANNOTATION -> "ANNOTATION",
+    ACC_ENUM -> "ENUM"
+  )
+
+  val field_access_flags = Map(
+    ACC_PUBLIC -> "PUBLIC",
+    ACC_PRIVATE -> "PRIVATE",
+    ACC_PROTECTED -> "PROTECTED",
+    ACC_STATIC -> "STATIC",
+    ACC_FINAL -> "FINAL",
+    ACC_VOLATILE -> "VOLATILE",
+    ACC_TRANSIENT -> "TRANSIENT",
+    ACC_SYNTHETIC -> "SYNTHETIC",
     ACC_ENUM -> "ENUM"
   )
 
