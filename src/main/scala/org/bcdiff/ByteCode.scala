@@ -75,7 +75,7 @@ object ByteCode {
       case INVOKEDYNAMIC =>
         val b = a.asInstanceOf[InvokeDynamicInsnNode]
         InvokeDynOp(b.name, b.desc, b.bsm, b.bsmArgs)
-      case op@(NEW | NEWARRAY | ANEWARRAY | CHECKCAST | INSTANCEOF) => TypeOp(op, a.asInstanceOf[TypeInsnNode].desc)
+      case op@(NEW | ANEWARRAY | CHECKCAST | INSTANCEOF) => TypeOp(op, a.asInstanceOf[TypeInsnNode].desc)
       case MULTIANEWARRAY =>
         val b = a.asInstanceOf[MultiANewArrayInsnNode]
         MultiArrayOp(b.desc, b.dims)
