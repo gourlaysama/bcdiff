@@ -5,7 +5,7 @@ import java.io.{FileInputStream, File}
 import org.objectweb.asm.tree._
 import org.objectweb.asm.ClassReader
 import Diff._
-import org.bcdiff.ClassDiffer._
+import ClassDiffer._
 
 object ClassDiffer {
 

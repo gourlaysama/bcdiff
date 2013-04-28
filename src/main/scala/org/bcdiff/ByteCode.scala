@@ -4,7 +4,6 @@ import org.objectweb.asm.Opcodes._
 import org.objectweb.asm.tree._
 import org.objectweb.asm.{Label, Handle}
 import java.util.{List => JList}
-import java.util
 
 object ByteCode {
 
@@ -328,7 +327,7 @@ case class LabelOp(label: Label) extends ByteCode {
 case class LoadOp(arg: AnyRef) extends ByteCode {
   val opCode = LDC
 
-  override def toString = "ldc // " + arg.getClass.getSimpleName + " " + arg.toString
+  override def toString = s"ldc $arg // ${arg.getClass.getName}"
 }
 
 case class IincOp(variable: Int, increment: Int) extends ByteCode {
