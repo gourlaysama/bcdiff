@@ -4,6 +4,7 @@ import org.objectweb.asm.Opcodes._
 import org.objectweb.asm.tree._
 import org.objectweb.asm.{Label, Handle}
 import java.util.{List => JList}
+import java.util
 
 object ByteCode {
 
@@ -45,6 +46,17 @@ object ByteCode {
     ACC_TRANSIENT -> "TRANSIENT",
     ACC_SYNTHETIC -> "SYNTHETIC",
     ACC_ENUM -> "ENUM"
+  )
+
+  val newarray_types = Map(
+    T_BOOLEAN -> "boolean",
+    T_CHAR -> "char",
+    T_FLOAT -> "float",
+    T_DOUBLE -> "double",
+    T_BYTE -> "byte",
+    T_SHORT -> "short",
+    T_INT -> "int",
+    T_LONG -> "long"
   )
 
   def convert(a: AbstractInsnNode): ByteCode = {
@@ -209,11 +221,11 @@ case class ZeroOp(opCode: Int) extends ByteCode {
 
 case class IntOp(opCode: Int, operand: Int) extends ByteCode {
   override def toString = {
-    (opCode match {
-      case BIPUSH => "bipush "
-      case SIPUSH => "sipush"
-      case NEWARRAY => "newarray "
-    }) + operand
+    opCode match {
+      case BIPUSH => "bipush " + operand
+      case SIPUSH => "sipush" + operand
+      case NEWARRAY => "newarray " + ByteCode.newarray_types(operand)
+    }
   }
 }
 
