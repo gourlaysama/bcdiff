@@ -1,13 +1,14 @@
 # bcdiff
 
-bcdiff is a command-line JVM bytecode diff tool written in Scala.
+bcdiff is a command-line JVM class file diff tool written in Scala.
 
 bcdiff supports:
 
- * diffing the content of methods with the same name and signature between two class files,
- * statistics on the difference between two class files (`--stat` and `--shortstat`),
+ * showing the differences in metadata between two class files (name, flags, implemented interfaces...),
+ * diffing the content (bytecode) of matching methods (methods with the same name and signature) between two class files, in a clever, label-aware way,
+ * displaying shorter statistics on the difference between two class files (`--stat` and `--shortstat`),
  * colored output (`--color` is on by default, `--nocolor` to disable),
- * and... that's all for now, but there is more to come.
+ * and... that's all for now, but there is more to come!
 
 # Quick example
 
@@ -119,13 +120,15 @@ And then use `bcdiff` anywhere.
 
 bcdiff is quite experimental, and many things are expected to change (and improve, hopefully). It is also very manually tested; do not depend on it for anything serious.
 
+The bytecode diff algorithm is about more than just diffing the raw bytecode list between two methods: it tries to merge labels that precede equivalent instructions on both sides, and then use that to properly consider some jump instruction equal. This is still a work in progress though.
+
 Future versions may include, in no particular order:
- * proper testing. I do not feel like commiting loads of class files as test resources, so this will require compiling java/scala classes on the fly and matching the output to an expected (textual?) output,
+ * proper testing. I do not feel like commiting loads of class files as test resources, so this will require compiling java/scala classes on the fly, or generating some with ASM, and then matching the output to an expected (textual?) output,
  * a better diff algorithm. The current one is somewhat similar to Myers' greedy algorithm, implementing the linear refinement would be nice,
  * better printing for some specialized instructions (e.g. `tableswitch` and `lookupswitch`),
  * being able to select a particular method to diff, or only methods that match a pattern, etc. instead of the whole thing,
  * show added/removed fields,
- * maybe allow diffing directories (diff class files with the same names on both sides)?
+ * allow diffing directories (diff class files with the same names on both sides)
  * maybe look into nailgun to get rid of that pesky JVM start overhead :-)
 
 An idea, a suggestion, an issue? Please open an issue on GitHub or ring me on twitter ([@gourlaysama](https://twitter.com/gourlaysama)).
