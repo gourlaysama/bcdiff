@@ -106,6 +106,7 @@ sealed trait ByteCode {
 
 sealed trait LabelAwareByteCode extends ByteCode {
   def toString(mapping: Label => Option[Int]): String
+  def linkedLabels: Seq[Label]
 }
 
 case class ZeroOp(opCode: Int) extends ByteCode {
@@ -321,6 +322,8 @@ case class JumpOp(opCode: Int, label: Label) extends ByteCode with LabelAwareByt
 
   def toString(mapping: (Label) => Option[Int]): String =
     toString + mapping(label).map(_.toString + ":").getOrElse("???")
+
+  def linkedLabels = List(label)
 }
 
 case class LabelOp(label: Label) extends ByteCode {
@@ -367,6 +370,8 @@ case class LookupSwitchOp(default: Label, keys: Seq[Int], labels: Seq[Label]) ex
 
     toString + "\n" + ct + deft
   }
+
+  def linkedLabels: Seq[Label] = default +: labels
 }
 
 case class MultiArrayOp(desc: String, dim: Int) extends ByteCode {

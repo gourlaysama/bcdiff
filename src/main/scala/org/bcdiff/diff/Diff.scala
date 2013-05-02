@@ -65,18 +65,29 @@ private[bcdiff] class Diff(ains: InsnList, bins: InsnList) {
 
     // we will need the mapping from a label to the next element
     var ct = -1
-    var idx = Map[Label, Int]()
+    var idx = Map[String, Int]()
 
     ins foreach {
       case LabelOp(l) =>
-        idx = idx + (l -> (ct + 1))
+        idx = idx + (l.toString -> (ct + 1))
       case _ =>
         ct = ct + 1
     }
 
+    // and we only keep referenced labels
+    var idx2 = Map[Label, Int]()
+
+    ins foreach {
+      case bc: LabelAwareByteCode =>
+        bc.linkedLabels foreach { ll =>
+          idx.get(ll.toString).foreach(i => idx2 = idx2 + (ll -> i))
+        }
+      case _ =>
+    }
+
     val fins = ins.filterNot(_.isInstanceOf[LabelOp]).toArray
 
-    (fins, idx.map(a => (a._2, a._1)).toMap, idx)
+    (fins, idx2.map(a => (a._2, a._1)).toMap, idx2)
   }
 
   /**
@@ -132,8 +143,8 @@ private[bcdiff] class Diff(ains: InsnList, bins: InsnList) {
     val matches: (ByteCode, ByteCode) => Boolean = eqlbs.map {
       m =>
         (a: ByteCode, b: ByteCode) => (a, b) match {
-          case (JumpOp(op, l), JumpOp(op2, l2)) if op == op2 =>
-            m.get(l).map(_.toString == l2.toString).getOrElse(false)
+          case (bc: LabelAwareByteCode, bc2: LabelAwareByteCode) =>
+            bc.linkedLabels.map(m.get).flatten.map(_.toString).toSet == bc2.linkedLabels.map(_.toString).toSet
           case _ => a == b
         }
     }.getOrElse((a: ByteCode, b: ByteCode) => a == b)
