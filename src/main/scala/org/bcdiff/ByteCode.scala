@@ -104,6 +104,10 @@ sealed trait ByteCode {
   def opCode: Int
 }
 
+sealed trait LabelAwareByteCode extends ByteCode {
+  def toString(mapping: Label => Option[Int]): String
+}
+
 case class ZeroOp(opCode: Int) extends ByteCode {
   override def toString = {
     opCode match {
@@ -292,7 +296,7 @@ case class InvokeDynOp(name: String, desc: String, mHandle: Handle, params: Seq[
   }
 }
 
-case class JumpOp(opCode: Int, label: Label) extends ByteCode {
+case class JumpOp(opCode: Int, label: Label) extends ByteCode with LabelAwareByteCode {
   override def toString = {
     opCode match {
       case IFEQ => "ifeq "
@@ -314,6 +318,9 @@ case class JumpOp(opCode: Int, label: Label) extends ByteCode {
       case IFNONNULL => "ifnonnull "
     }
   }
+
+  def toString(mapping: (Label) => Option[Int]): String =
+    toString + mapping(label).map(_.toString + ":").getOrElse("???")
 }
 
 case class LabelOp(label: Label) extends ByteCode {
@@ -342,10 +349,24 @@ case class TableSwitchOp(min: Int, max: Int, default: Label, labels: Seq[Label])
   override def toString = s"tableswitch $min to $max, default: $default, ${labels.size} labels"
 }
 
-case class LookupSwitchOp(default: Label, keys: Seq[Int], labels: Seq[Label]) extends ByteCode {
+case class LookupSwitchOp(default: Label, keys: Seq[Int], labels: Seq[Label]) extends ByteCode with LabelAwareByteCode {
   val opCode = TABLESWITCH
 
-  override def toString = s"lookupswitch default: $default, ${labels.size} labels"
+  override def toString = s"lookupswitch (${labels.size} cases)"
+
+  def toString(mapping: (Label) => Option[Int]): String = {
+    def pad(i: Int) = {
+      val s = i.toString
+      Stream.fill(15 - s.length)(' ').mkString + s
+    }
+
+    val ct = keys.zip(labels).map {
+      case (i, l) => s"${pad(i)} -> ${mapping(l).map(_.toString + ":").getOrElse("???")}"
+    }.mkString("\n")
+    val deft = "\n        default -> " + mapping(default).map(_.toString + ":").getOrElse("???")
+
+    toString + "\n" + ct + deft
+  }
 }
 
 case class MultiArrayOp(desc: String, dim: Int) extends ByteCode {

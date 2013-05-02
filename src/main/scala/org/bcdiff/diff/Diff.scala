@@ -1,6 +1,6 @@
 package org.bcdiff.diff
 
-import org.bcdiff.{JumpOp, LabelOp, ByteCode}
+import org.bcdiff._
 import org.objectweb.asm.Label
 import annotation.tailrec
 import org.objectweb.asm.tree.{InsnList, AbstractInsnNode}
@@ -260,27 +260,30 @@ private[bcdiff] class Diff(ains: InsnList, bins: InsnList) {
     var i = -1
     var j = -1
 
+    // utility mapping functions for getting label location
+    def insertedLabels(l: Label): Option[Int] = bpos.get(l)
+    def removedLabels(l: Label): Option[Int] = eqlabs.get(l).flatMap(bpos.get).orElse(apos.get(l))
+    def keptLabels(l: Label): Option[Int] = bpos.get(l).orElse(apos.get(l))
+
     ch.map {
       case Keep =>
         i = i + 1
         j = j + 1
         b(j) match {
-          case c@JumpOp(_, l) =>
-            println("  " + intPrint(j) + ": " + c + bpos.get(l).orElse(apos.get(l)).map(_.toString + ":").getOrElse("???"))
+          case bc: LabelAwareByteCode => println("  " + intPrint(j) + ": " + bc.toString(keptLabels))
           case c => println(s"  ${intPrint(j)}: $c")
         }
       case Insert =>
         j = j + 1
         b(j) match {
-          case c@JumpOp(_, l) => added(j, c + bpos.get(l).map(_.toString + ":").getOrElse("???"))
+          case bc: LabelAwareByteCode => added(j, bc.toString(insertedLabels))
           case c => added(j, c.toString)
         }
       case Remove =>
         i = i + 1
         a(i) match {
           // TODO: find a way to visually differentiate old vs. new instruction number in jumps
-          case c@JumpOp(_, l) =>
-            removed(i, c + eqlabs.get(l).flatMap(bpos.get).orElse(apos.get(l)).map(_.toString + ":").getOrElse("???"))
+          case bc: LabelAwareByteCode => removed(i, bc.toString(removedLabels))
           case c => removed(i, c.toString)
         }
     }
