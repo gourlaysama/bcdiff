@@ -207,7 +207,9 @@ private[bcdiff] class Diff(ains: InsnList, bins: InsnList) {
       @tailrec
       def acc(i: Int, j: Int, ch: List[Change]) {
         (alab.get(i), blab.get(j)) match {
-          case (Some(l1), Some(l2)) => eqlabs = eqlabs + (l1 -> l2)
+          case (Some(l1), Some(l2)) =>
+            if (!eqlabs.contains(l1))
+              eqlabs = eqlabs + (l1 -> l2)
           case _ =>
         }
 
