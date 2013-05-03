@@ -346,10 +346,28 @@ case class IincOp(variable: Int, increment: Int) extends ByteCode {
   override def toString = s"iinc $variable, $increment"
 }
 
-case class TableSwitchOp(min: Int, max: Int, default: Label, labels: Seq[Label]) extends ByteCode {
+case class TableSwitchOp(min: Int, max: Int, default: Label, labels: Seq[Label]) extends ByteCode with LabelAwareByteCode {
   val opCode = TABLESWITCH
 
-  override def toString = s"tableswitch $min to $max, default: $default, ${labels.size} labels"
+  override def toString = s"tableswitch (${labels.size} labels)"
+
+  def toString(mapping: (Label) => Option[Int]): String = {
+    def pad(i: Int) = {
+      val s = i.toString
+      Stream.fill(15 - s.length)(' ').mkString + s
+    }
+
+    val keys = (min to max)
+
+    val ct = keys.zip(labels).map {
+      case (i, l) => s"${pad(i)} -> ${mapping(l).map(_.toString + ":").getOrElse("???")}"
+    }.mkString("\n")
+    val deft = "\n        default -> " + mapping(default).map(_.toString + ":").getOrElse("???")
+
+    toString + "\n" + ct + deft
+  }
+
+  def linkedLabels: Seq[Label] = default +: labels
 }
 
 case class LookupSwitchOp(default: Label, keys: Seq[Int], labels: Seq[Label]) extends ByteCode with LabelAwareByteCode {
