@@ -18,7 +18,7 @@ object BcDiffBuild extends Build {
     "bcdiff",
     file("."),
     settings = buildSettings ++ buildInfoSettings ++ packSettings ++ SbtStartScript.startScriptForClassesSettings ++
-      NailgunBuild.settings ++ Seq(
+      NailgunBuild.settings ++ DistBuild.settings ++ Seq(
       libraryDependencies ++= Seq(
         "org.ow2.asm" % "asm-tree" % "4.1",
         "org.rogach" %% "scallop" % "0.8.1"
@@ -26,8 +26,7 @@ object BcDiffBuild extends Build {
       scalacOptions ++= Seq("-feature", "-deprecation", "-Xlint"),
       sourceGenerators in Compile <+= buildInfo,
       buildInfoKeys := Seq[BuildInfoKey](name, version),
-      buildInfoPackage <<= organization,
-      packMain <<= name(n => Map(n -> "org.bcdiff.Main"))
+      buildInfoPackage <<= organization
     )
   )
 }

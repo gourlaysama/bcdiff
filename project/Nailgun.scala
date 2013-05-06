@@ -6,7 +6,7 @@ object NailgunBuild {
 
   val ngCompiler = SettingKey[String]("ng-compiler")
   val ngCompilerOptions = SettingKey[String]("ng-compiler-options")
-  val ngbuild = TaskKey[Unit]("ng-build", "Build the nailgun client")
+  val ngbuild = TaskKey[File]("ng-build", "Build the nailgun client")
   val ngSource = SettingKey[File]("ng-source")
   val ngTarget = SettingKey[File]("ng-target")
 
@@ -15,18 +15,20 @@ object NailgunBuild {
     ngCompiler := "gcc",
     ngCompilerOptions := "-Wall -pedantic -s -O3",
     ngSource <<= (sourceDirectory / "nailgun/c/ng.c"),
-    ngTarget <<= (target / "nailgun/ng")
+    ngTarget <<= (target / "nailgun/bin/ng")
   )
 
-  def ngBuild(base: File, src: File, tg: File, compiler: String, opts: String, out: Keys.TaskStreams) {
+  def ngBuild(base: File, src: File, tg: File, compiler: String, opts: String, out: Keys.TaskStreams): File = {
     if (src.exists) {
       tg.getParentFile.mkdirs()
       val cmd = "%s %s -o %s %s".format(compiler, opts, tg.getAbsolutePath, src.getAbsolutePath)
       out.log.info("Compiling " + src.getPath)
       out.log.info(cmd)
-      Process(cmd, base) !
+      Process(cmd, base) ! out.log
     } else {
       out.log.error("Source not found: " + src)
     }
+
+    tg
   }
 }
