@@ -8,6 +8,7 @@ bcdiff supports:
  * diffing the content (bytecode) of matching methods (methods with the same name and signature) between two class files, in a clever, label-aware way,
  * displaying shorter statistics on the difference between two class files (`--stat` and `--shortstat`),
  * colored output (`--color` is on by default, `--nocolor` to disable),
+ * doing the above on directories of class files,
  * and... that's all for now, but there is more to come!
 
 # Quick example
@@ -100,19 +101,18 @@ Download, extract and run `bin/bcdiff`.
 
 ## Latest version from source
 
-Just compile and generate a launch script:
+Just compile and generate a distribution with:
 
 ```sh
-sbt compile
-sbt start-script
+sbt pack
 ```
 
-The tool can then be run without sbt by running `target/start`.
+The tool can then be run without sbt by running `target/pack/bin/bcdiff`, or copying the whole `target/pack` directory in some location.
 For example:
 
 ```sh
-chmod +x target/start
-sudo ln -s `pwd`/target/start /usr/bin/bcdiff
+sudo cp -Tr target/pack /usr/local/bcdiff
+sudo ln -s /usr/local/bcdiff/bin/bcdiff /usr/bin/bcdiff
 ```
 And then use `bcdiff` anywhere.
 
@@ -125,11 +125,10 @@ The bytecode diff algorithm is about more than just diffing the raw bytecode lis
 Future versions may include, in no particular order:
  * proper testing. I do not feel like commiting loads of class files as test resources, so this will require compiling java/scala classes on the fly, or generating some with ASM, and then matching the output to an expected (textual?) output,
  * a better diff algorithm. The current one is somewhat similar to Myers' greedy algorithm, implementing the linear refinement would be nice,
- * better printing for some specialized instructions (e.g. `tableswitch` and `lookupswitch`),
  * being able to select a particular method to diff, or only methods that match a pattern, etc. instead of the whole thing,
  * show added/removed fields,
- * allow diffing directories (diff class files with the same names on both sides)
- * maybe look into nailgun to get rid of that pesky JVM start overhead :-)
+ * allow diffing jar files the same way as directories,
+ * look into nailgun to get rid of that pesky JVM start overhead :-)
 
 An idea, a suggestion, an issue? Please open an issue on GitHub or ring me on twitter ([@gourlaysama](https://twitter.com/gourlaysama)).
 
