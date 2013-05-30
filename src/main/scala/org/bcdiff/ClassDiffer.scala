@@ -29,7 +29,7 @@ object ClassDiffer {
 class ClassDiffer(f1: File, f2: File, color: Boolean, methods: Boolean, typ: DiffType) {
 
   // reads and makes sure we have valid class files
-  private def prepare(): (ClassNode, ClassNode) = {
+  private def prepare(): (Option[ClassNode], Option[ClassNode]) = {
 
     def safeOpen[A](f: File)(content: FileInputStream => A): A = {
       var r: FileInputStream = null
@@ -55,7 +55,10 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, methods: Boolean, typ: Dif
       cn
     }
 
-    (safeOpen(f1)(read), safeOpen(f2)(read))
+    val cn1 = if (f1.exists()) Some(safeOpen(f1)(read)) else None
+    val cn2 = if (f2.exists()) Some(safeOpen(f2)(read)) else None
+
+    (cn1, cn2)
   }
 
   /**
@@ -68,12 +71,14 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, methods: Boolean, typ: Dif
     if (typ == Full) {
       // header
       println(s"bcdiff ${f1.getPath} ${f2.getPath}")
+      val n1 = if (f1.exists()) f1.getPath else "/dev/null"
+      val n2 = if (f2.exists()) f2.getPath else "/dev/null"
       if (color) {
-        removed(s"-- ${f1.getPath}")
-        added(s"++ ${f2.getPath}")
+        removed(s"-- $n1")
+        added(s"++ $n2")
       } else {
-        println(s"--- ${f1.getPath}")
-        println(s"+++ ${f2.getPath}")
+        println(s"--- $n1")
+        println(s"+++ $n2")
       }
 
       println()
@@ -84,8 +89,8 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, methods: Boolean, typ: Dif
       compareFieldPretty(_.superName)("Parent class: " + clazzN(_))
 
       // advanced fields
-      compareAccessFlags(cn1.access, cn2.access, ByteCode.class_access_flags)
-      compareInterfaces(uglyCast(cn1.interfaces), uglyCast(cn2.interfaces))
+      compareAccessFlags(cn1.map(_.access), cn2.map(_.access), ByteCode.class_access_flags)
+      compareInterfaces(cn1.map(c => uglyCast(c.interfaces)), cn2.map(c => uglyCast(c.interfaces)))
       compareFieldPretty(_.outerClass)("Outer class: " + clazzN(_))
       // TODO: annotations
 
@@ -98,8 +103,8 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, methods: Boolean, typ: Dif
 
     if (methods) {
       // methods
-      val methods1 = uglyCast[MethodNode](cn1.methods).map(a => ((a.name, a.desc), a)).toMap
-      val methods2 = uglyCast[MethodNode](cn2.methods).map(a => ((a.name, a.desc), a)).toMap
+      val methods1 = cn1.toSeq.flatMap(c => uglyCast[MethodNode](c.methods)).map(a => ((a.name, a.desc), a)).toMap
+      val methods2 = cn2.toSeq.flatMap(c => uglyCast[MethodNode](c.methods)).map(a => ((a.name, a.desc), a)).toMap
 
       val same = methods1.keySet.intersect(methods2.keySet)
       val only1 = methods1 -- same
@@ -140,7 +145,7 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, methods: Boolean, typ: Dif
         println(s"@@ Method ${met1.name} // Signature: ${met1.desc}")
 
         // diff access flags
-        compareAccessFlags(met1.access, met2.access, ByteCode.method_access_flags)
+        compareAccessFlags(Some(met1.access), Some(met2.access), ByteCode.method_access_flags)
 
         // pretty print bytecode diff
         d.formatChanges(diff, color)
@@ -193,10 +198,10 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, methods: Boolean, typ: Dif
     flags.keySet.filter(k => (a & k) != 0)
   }
 
-  private def compareAccessFlags(a1: Int, a2: Int, flags: Map[Int, String]) {
+  private def compareAccessFlags(a1: Option[Int], a2: Option[Int], flags: Map[Int, String]) {
 
-    val v1 = getFlags(a1, flags)
-    val v2 = getFlags(a2, flags)
+    val v1 = a1.map(a => getFlags(a, flags)).getOrElse(Set.empty)
+    val v2 = a2.map(a => getFlags(a, flags)).getOrElse(Set.empty)
 
     if (v1 != v2) {
       val pretty: Set[Int] => String = if (color) {
@@ -223,9 +228,9 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, methods: Boolean, typ: Dif
     }
   }
 
-  private def compareInterfaces(in1: Seq[String], in2: Seq[String]) {
-    val v1 = in1.toSet
-    val v2 = in2.toSet
+  private def compareInterfaces(in1: Option[Seq[String]], in2: Option[Seq[String]]) {
+    val v1 = in1.map(_.toSet).getOrElse(Set.empty)
+    val v2 = in2.map(_.toSet).getOrElse(Set.empty)
 
     if (v1 != v2) {
       val pretty: Set[String] => String = if (color) {
@@ -252,14 +257,14 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, methods: Boolean, typ: Dif
     }
   }
 
-  private def compareFieldPretty[T](f: ClassNode => T)(pretty: T => String)(implicit cn: (ClassNode, ClassNode)) {
-    check(f(cn._1), f(cn._2))(pretty)
+  private def compareFieldPretty[T](f: ClassNode => T)(pretty: T => String)(implicit cn: (Option[ClassNode], Option[ClassNode])) {
+    check(cn._1.flatMap(c => Option(f(c))), cn._2.flatMap(c => Option(f(c))))(pretty)
   }
 
-  private def check[T](v1: T, v2: T)(pretty: T => String) {
-    if (v1 != v2) {
-      removed(v1, pretty)
-      added(v2, pretty)
+  private def check[T](v1: Option[T], v2: Option[T])(pretty: T => String) {
+    if (!v1.exists(p => v2.exists(_ == p))) {
+      v1.foreach(removed(_, pretty))
+      v2.foreach(added(_, pretty))
     }
   }
 

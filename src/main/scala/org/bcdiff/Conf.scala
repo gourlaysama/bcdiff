@@ -30,7 +30,7 @@ class Conf(arg: Seq[String]) extends ScallopConf(arg) {
   val methods = toggle("methods", default = Some(true), descrYes = "Diff the flags and content (byte-codes) of methods (default)",
   descrNo = "Do not diff methods", noshort = true)
 
-  val files = trailArg[List[String]](descr = "Class files to diff (exactly 2)", required = true)
+  val files = trailArg[List[String]](descr = "Class files / folders to diff (exactly 2)", required = true)
 
   validate(files) {
     f => f.size match {
