@@ -13,10 +13,9 @@ object Main extends App {
 
   val files = c.files().map(new File(_))
 
-  files.filterNot(_.exists()) match {
-    case Nil =>
-    case t =>
-      t.map(_.getAbsolutePath).foreach {n => Console.err.println(s"File '$n' does not exist!")}
+  files.filterNot(_.exists()).foreach {
+    t =>
+      Console.err.println(s"File '${t.getAbsolutePath}' does not exist!")
       sys.exit(1)
   }
 
@@ -27,35 +26,23 @@ object Main extends App {
     sys.exit(1)
   }
 
-  val typ = if (c.shortstat()) {
-    Shortstat
-  } else if (c.stat()) {
-    Stat
-  } else {
-    Full
-  }
+  val typ = if (c.shortstat()) Shortstat
+            else if (c.stat()) Stat
+            else               Full
+
 
   if (f1.isDirectory && f2.isDirectory) {
-    val classFilter = new FilenameFilter {
-      def accept(dir: File, name: String): Boolean = name.endsWith(".class")
-    }
-    val dirFilter = new FileFilter {
-      def accept(file: File) = file.isDirectory
-    }
+    val classFilter = new FilenameFilter { def accept(dir: File, name: String): Boolean = name.endsWith(".class") }
+    val dirFilter = new FileFilter { def accept(file: File) = file.isDirectory }
 
     def recDiff(d1: File, d2: File) {
       val m = d1.list(classFilter).toList ::: d2.list(classFilter).toList
-
       m.foreach(f => new ClassDiffer(new File(d1, f), new File(d2, f), c.color(), c.methods(), typ).diff())
 
       val d = d1.listFiles(dirFilter).toList ::: d2.listFiles(dirFilter).toList
-
       d.foreach(f => recDiff(new File(d1, f.getName), new File(d2, f.getName)))
     }
 
     recDiff(f1, f2)
-
-  } else {
-    new ClassDiffer(f1,f2, c.color(), c.methods(), typ).diff()
-  }
+  } else new ClassDiffer(f1, f2, c.color(), c.methods(), typ).diff()
 }

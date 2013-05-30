@@ -124,14 +124,12 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, methods: Boolean, typ: Dif
         s => diffMethods(methods1(s), methods2(s))
       }.count(_ == true)
 
-      if (typ != Full) {
+      if (typ != Full)
         println(s"${only1.size} methods removed, ${only2.size} added, $modcount modified")
-      }
     }
   }
 
   private def diffMethods(met1: MethodNode, met2: MethodNode): Boolean = {
-
 
     val d = new Diff(met1.instructions, met2.instructions)
     val diff = d.diff()
@@ -139,7 +137,7 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, methods: Boolean, typ: Dif
     val modified = diff.exists(_ != Keep) || accessmodified
 
     // print nothing if there are no differences
-    if (modified) {
+    if (modified)
       if (typ == Full) {
         println()
         println(s"@@ Method ${met1.name} // Signature: ${met1.desc}")
@@ -162,41 +160,33 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, methods: Boolean, typ: Dif
         val total = ins + rem
         val (pl, mn) = if (ins + rem != 0) {
           val s = Math.ceil(10 * ins / total).toInt
-          (Stream.fill(s)('+'),
-            Stream.fill(10 - s)('-'))
+          (Stream.fill(s)('+'), Stream.fill(10 - s)('-'))
         } else {
           (Stream.empty, Stream.fill(10)(' '))
         }
 
-        def intPrint(i: Int): String = {
-          if (i < 10)
-            s"  $i"
-          else if (i < 100)
-            s" $i"
-          else
-            i.toString
-        }
+        def intPrint(i: Int): String =
+          if (i < 10)       s"  $i"
+          else if (i < 100) s" $i"
+          else              i.toString
 
-        if (color) {
+        if (color)
           print(intPrint(total) + " " + Console.GREEN + Console.BOLD + pl.mkString + Console.RED + mn.mkString + Console.RESET)
-        } else {
+        else
           print(intPrint(total) + " " + pl.mkString + mn.mkString)
-        }
+
         print(s" | ${met1.name} // Signature: ${met1.desc}")
-        if (accessmodified) {
+        if (accessmodified)
           println("  ; access flags changed")
-        } else {
+        else
           println()
-        }
       }
-    }
 
     modified
   }
 
-  private def getFlags(a: Int, flags: Map[Int, String]): Set[Int] = {
+  private def getFlags(a: Int, flags: Map[Int, String]): Set[Int] =
     flags.keySet.filter(k => (a & k) != 0)
-  }
 
   private def compareAccessFlags(a1: Option[Int], a2: Option[Int], flags: Map[Int, String]) {
 
@@ -218,9 +208,7 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, methods: Boolean, typ: Dif
               flags(i)
         }.mkString(", ")
 
-      } else {
-        "Flags: " + _.map(flags.apply).mkString(", ")
-      }
+      } else "Flags: " + _.map(flags.apply).mkString(", ")
 
       if (!v1.isEmpty) removed(v1, pretty)
       if (!v2.isEmpty) added(v2, pretty)
@@ -246,10 +234,7 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, methods: Boolean, typ: Dif
             else
               clazzN(i)
         }.mkString(", ")
-
-      } else {
-        "Implemented interfaces: " + _.mkString(", ")
-      }
+      } else "Implemented interfaces: " + _.mkString(", ")
 
       if (!v1.isEmpty) removed(v1, pretty)
       if (!v2.isEmpty) added(v2, pretty)
@@ -271,19 +256,17 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, methods: Boolean, typ: Dif
   private def toS[T](t: T) = t.toString
 
   private def added[T](s: T, pretty: T => String = toS[T] _) {
-    if (color) {
+    if (color)
       Console.println(Console.GREEN + Console.BOLD + "+" + pretty(s) + Console.RESET)
-    } else {
+    else
       println("+ " + pretty(s))
-    }
   }
 
   private def removed[T](s: T, pretty: T => String = toS[T] _) {
-    if (color) {
+    if (color)
       Console.println(Console.RED + Console.BOLD + "-" + pretty(s) + Console.RESET)
-    } else {
+    else
       println("- " + pretty(s))
-    }
   }
 
   private def clazzN(s: String) = s.replace('/', '.')
