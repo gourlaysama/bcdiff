@@ -84,10 +84,11 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
 
     implicit val cn@(cn1, cn2) = prepare()
 
-    println(s"bcdiff ${f1.path} ${f2.path}")
+
 
     if (typ == Full) {
       // header
+      changes()
       val n1 = if (f1.in.isDefined) f1.path else "/dev/null"
       val n2 = if (f2.in.isDefined) f2.path else "/dev/null"
       if (color) {
@@ -127,13 +128,18 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
       val only1 = methods1 -- same
       val only2 = methods2 -- same
 
+      if (only1.size != 0 || only2.size != 0) changes()
+
       // added / removed methods
-      val prettyM: ((String, MethodNode)) => String = a =>
+      if (typ == Full) {
+        val prettyM: ((String, MethodNode)) => String = a =>
         s"Method ${a._2.name} // Signature: ${a._2.desc} | ${a._2.instructions.size()} instructions"
 
-      if (typ == Full) {
         only1.foreach(a => removed((a._1._2, a._2), prettyM))
         only2.foreach(a => added((a._1._2, a._2), prettyM))
+      } else if (typ == Stat) {
+        only1.foreach(a => println(s"${intPrint(a._2.instructions.size())} ---------- | ${a._2.name} // Signature: ${a._2.desc}  ; removed"))
+        only2.foreach(a => println(s"${intPrint(a._2.instructions.size())} ++++++++++ | ${a._2.name} // Signature: ${a._2.desc}  ; added"))
       }
 
       // methods with identical name+signature --> diff
@@ -141,7 +147,7 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
         s => diffMethods(methods1(s), methods2(s))
       }.count(_ == true)
 
-      if (typ != Full)
+      if (typ != Full && changed)
         println(s"${only1.size} methods removed, ${only2.size} added, $modcount modified")
     }
   }
@@ -154,7 +160,8 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
     val modified = diff.exists(_ != Keep) || accessmodified
 
     // print nothing if there are no differences
-    if (modified)
+    if (modified) {
+      changes()
       if (typ == Full) {
         println()
         println(s"@@ Method ${met1.name} // Signature: ${met1.desc}")
@@ -182,11 +189,6 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
           (Stream.empty, Stream.fill(10)(' '))
         }
 
-        def intPrint(i: Int): String =
-          if (i < 10)       s"  $i"
-          else if (i < 100) s" $i"
-          else              i.toString
-
         if (color)
           print(intPrint(total) + " " + Console.GREEN + Console.BOLD + pl.mkString + Console.RED + mn.mkString + Console.RESET)
         else
@@ -198,9 +200,15 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
         else
           println()
       }
+    }
 
     modified
   }
+
+  private def intPrint(i: Int): String =
+    if (i < 10)       s"  $i"
+    else if (i < 100) s" $i"
+    else              i.toString
 
   private def getFlags(a: Int, flags: Map[Int, String]): Set[Int] =
     flags.keySet.filter(k => (a & k) != 0)
@@ -256,6 +264,14 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
       if (!v1.isEmpty) removed(v1, pretty)
       if (!v2.isEmpty) added(v2, pretty)
 
+    }
+  }
+
+  private var changed: Boolean = false
+  private def changes() {
+    if (!changed) {
+      println(s"bcdiff ${f1.path} ${f2.path}")
+      changed = true
     }
   }
 
