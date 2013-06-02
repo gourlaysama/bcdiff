@@ -1,7 +1,7 @@
 package org.bcdiff
 
 import diff.Diff
-import java.io.{FileInputStream, File}
+import java.io.{InputStream, FileInputStream, File}
 import org.objectweb.asm.tree._
 import org.objectweb.asm.ClassReader
 import Diff._
@@ -17,6 +17,36 @@ object ClassDiffer {
 
   case object Shortstat extends DiffType
 
+  object FileInfo {
+    def apply(in: Option[InputStream], name: String, path: String, abspath: String) =
+      new FileInfo(in, name, path, abspath)
+
+    def apply(f: File) = {
+      def safeOpen(f: File): Option[InputStream] = {
+        var r: FileInputStream = null
+        try {
+          r = new FileInputStream(f)
+          Some(r)
+        } catch {
+          case e: Exception =>
+            Console.err.println(s"Failed to parse class file '${f.getAbsolutePath}'.")
+            None
+        } finally {
+          if (r != null) {
+            r.close()
+          }
+        }
+      }
+
+      new FileInfo(safeOpen(f), f.getName, f.getPath, f.getAbsolutePath)
+    }
+  }
+
+  class FileInfo(val in: Option[InputStream], val name: String, val path: String, val abspath: String)
+
+  def apply(f1: File, f2: File, color: Boolean, methods: Boolean, typ: DiffType): ClassDiffer =
+    new ClassDiffer(FileInfo(f1), FileInfo(f2), color, methods, typ)
+
 }
 
 /**
@@ -26,39 +56,26 @@ object ClassDiffer {
  *
  * @author Antoine Gourlay
  */
-class ClassDiffer(f1: File, f2: File, color: Boolean, methods: Boolean, typ: DiffType) {
+class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, typ: DiffType) {
 
   // reads and makes sure we have valid class files
   private def prepare(): (Option[ClassNode], Option[ClassNode]) = {
-
-    def safeOpen[A](f: File)(content: FileInputStream => A): A = {
-      var r: FileInputStream = null
+    def safeParse(f: FileInfo): Option[ClassNode] = {
       try {
-        r = new FileInputStream(f)
-        content(r)
+        f.in.map {i =>
+          val cn = new ClassNode()
+          val cr = new ClassReader(i)
+          cr.accept(cn, 0)
+          cn
+        }
       } catch {
         case e: Exception =>
-          Console.err.println(s"Failed to parse class file '${f.getAbsolutePath}'.")
-          sys.exit(1)
-          null.asInstanceOf[A] // hum... how can I get rid of that?
-      } finally {
-        if (r != null) {
-          r.close()
-        }
+          Console.err.println(s"Failed to parse class file '${f.abspath}'.")
+          None
       }
     }
 
-    def read(i: FileInputStream): ClassNode = {
-      val cn = new ClassNode()
-      val cr = new ClassReader(i)
-      cr.accept(cn, 0)
-      cn
-    }
-
-    val cn1 = if (f1.exists()) Some(safeOpen(f1)(read)) else None
-    val cn2 = if (f2.exists()) Some(safeOpen(f2)(read)) else None
-
-    (cn1, cn2)
+    (safeParse(f1), safeParse(f2))
   }
 
   /**
@@ -68,11 +85,12 @@ class ClassDiffer(f1: File, f2: File, color: Boolean, methods: Boolean, typ: Dif
 
     implicit val cn@(cn1, cn2) = prepare()
 
+    println(s"bcdiff ${f1.path} ${f2.path}")
+
     if (typ == Full) {
       // header
-      println(s"bcdiff ${f1.getPath} ${f2.getPath}")
-      val n1 = if (f1.exists()) f1.getPath else "/dev/null"
-      val n2 = if (f2.exists()) f2.getPath else "/dev/null"
+      val n1 = if (f1.in.isDefined) f1.path else "/dev/null"
+      val n2 = if (f2.in.isDefined) f2.path else "/dev/null"
       if (color) {
         removed(s"-- $n1")
         added(s"++ $n2")
