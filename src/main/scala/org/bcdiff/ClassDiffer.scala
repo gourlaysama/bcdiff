@@ -29,12 +29,9 @@ object ClassDiffer {
           Some(r)
         } catch {
           case e: Exception =>
-            Console.err.println(s"Failed to parse class file '${f.getAbsolutePath}'.")
-            None
-        } finally {
-          if (r != null) {
+            Console.err.println(s"Failed to open file '${f.getAbsolutePath}'.")
             r.close()
-          }
+            None
         }
       }
 
@@ -72,6 +69,8 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
         case e: Exception =>
           Console.err.println(s"Failed to parse class file '${f.abspath}'.")
           None
+      } finally {
+        f.in.map(_.close())
       }
     }
 

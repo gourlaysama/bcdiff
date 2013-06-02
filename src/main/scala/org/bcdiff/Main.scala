@@ -54,7 +54,7 @@ object Main extends App {
     val ff2 = new ZipFile(f2)
 
     import scala.collection.JavaConversions._
-
+    try {
     val m = ff1.entries.filter(_.getName.endsWith(".class")).filterNot(_.isDirectory).map(_.getName).toList :::
       ff2.entries.filter(_.getName.endsWith(".class")).filterNot(_.isDirectory).map(_.getName).toList
 
@@ -67,7 +67,10 @@ object Main extends App {
 
         new ClassDiffer(fi1, fi2, c.color(), c.methods(), typ).diff()
     }
-
+    } finally {
+      ff1.close()
+      ff2.close()
+    }
 
   } else ClassDiffer(f1, f2, c.color(), c.methods(), typ).diff()
 }
