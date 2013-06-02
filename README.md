@@ -8,7 +8,7 @@ bcdiff supports:
  * diffing the content (bytecode) of matching methods (methods with the same name and signature) between two class files, in a clever, label-aware way,
  * displaying shorter statistics on the difference between two class files (`--stat` and `--shortstat`),
  * colored output (`--color` is on by default, `--nocolor` to disable),
- * doing the above on directories of class files,
+ * doing the above on between two directories of class files or two jar files,
  * and... that's all for now, but there is more to come!
 
 # Quick example
