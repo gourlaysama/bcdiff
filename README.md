@@ -127,7 +127,6 @@ Future versions may include, in no particular order:
  * a better diff algorithm. The current one is somewhat similar to Myers' greedy algorithm, implementing the linear refinement would be nice,
  * being able to select a particular method to diff, or only methods that match a pattern, etc. instead of the whole thing,
  * show added/removed fields,
- * allow diffing jar files the same way as directories,
  * look into nailgun to get rid of that pesky JVM start overhead :-)
 
 An idea, a suggestion, an issue? Please open an issue on GitHub or ring me on twitter ([@gourlaysama](https://twitter.com/gourlaysama)).

@@ -6,7 +6,7 @@ name := "bcdiff"
 
 version := "0.3-SNAPSHOT"
 
-scalaVersion := "2.10.1"
+scalaVersion := "2.10.2"
 
 scalacOptions += "-Xlint"
 
