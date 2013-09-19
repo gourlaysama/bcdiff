@@ -1,7 +1,5 @@
 import com.typesafe.sbt.SbtStartScript
 
-import xerial.sbt.Pack._
-
 name := "bcdiff"
 
 version := "0.3-SNAPSHOT"
@@ -26,6 +24,8 @@ buildInfoKeys := Seq[BuildInfoKey](name, version)
 
 buildInfoPackage := "org.bcdiff"
 
-packSettings
+packagerSettings
 
-packMain <<= name(n => Map(n -> "org.bcdiff.Main"))
+packageArchetype.java_application
+
+name := "bcdiff"
