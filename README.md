@@ -95,23 +95,23 @@ Running `bcdiff --stat` on the `scala.Enumeration` class file between Scala 2.9.
 
 ## Last release
 
-The last release is [bcdiff 0.2 (tar.gz)](http://static.antoine.gourlay.fr/bcdiff/releases/bcdiff-0.2.tgz) ([md5](http://static.antoine.gourlay.fr/bcdiff/releases/bcdiff-0.2.tgz.md5)).
+The last release is [bcdiff 0.2](https://github.com/gourlaysama/bcdiff/releases/tag/v0.2).
 
 Download, extract and run `bin/bcdiff`.
 
 ## Latest version from source
 
-Just compile and generate a distribution with:
+Just compile and generate a staged distribution with:
 
 ```sh
-sbt pack
+sbt stage
 ```
 
-The tool can then be run without sbt by running `target/pack/bin/bcdiff`, or copying the whole `target/pack` directory in some location.
+bcdiff can then be run without sbt by running `target/universal/stage/bin/bcdiff`, or copying the whole `target/universal/stage` directory in some location.
 For example:
 
 ```sh
-sudo cp -Tr target/pack /usr/local/bcdiff
+sudo cp -Tr target/universal/stage /usr/local/bcdiff
 sudo ln -s /usr/local/bcdiff/bin/bcdiff /usr/bin/bcdiff
 ```
 And then use `bcdiff` anywhere.

@@ -1,5 +1,3 @@
-import com.typesafe.sbt.SbtStartScript
-
 name := "bcdiff"
 
 version := "0.3-SNAPSHOT"
@@ -14,8 +12,6 @@ libraryDependencies += "org.rogach" %% "scallop" % "0.8.1"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "1.9.1" % "test"
 
-seq(SbtStartScript.startScriptForClassesSettings: _*)
-
 buildInfoSettings
 
 sourceGenerators in Compile <+= buildInfo
@@ -27,5 +23,3 @@ buildInfoPackage := "org.bcdiff"
 packagerSettings
 
 packageArchetype.java_application
-
-name := "bcdiff"
