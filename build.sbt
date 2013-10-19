@@ -23,3 +23,8 @@ buildInfoPackage := "org.bcdiff"
 packagerSettings
 
 packageArchetype.java_application
+
+mappings in Universal ++= Seq(
+  file("CHANGELOG.md") -> "doc/CHANGELOG",
+  file("LICENSE") -> "doc/LICENSE")
+
