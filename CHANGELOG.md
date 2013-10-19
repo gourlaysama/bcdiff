@@ -1,6 +1,19 @@
 Change history
 ==============
 
+0.3
+----
+
+ - Update to Scala 2.10.3.
+
+ - New feature: diffing two directories of classfiles is now possible.
+
+ - New feature: diffing two jar files is now possible.
+
+ - The header with the diffed file names is now always visible (even with --stat)
+
+ - Fix: File streams were not properly closed.
+
 0.2
 ----
 
