@@ -4,13 +4,11 @@ version := "0.4-SNAPSHOT"
 
 scalaVersion := "2.10.3"
 
-scalacOptions += "-Xlint"
+scalacOptions ++= Seq("-Xlint", "-deprecation", "-feature")
 
-libraryDependencies += "org.ow2.asm" % "asm-tree" % "4.1"
+libraryDependencies += "org.ow2.asm" % "asm-tree" % "4.2"
 
-libraryDependencies += "org.rogach" %% "scallop" % "0.8.1"
-
-libraryDependencies += "org.scalatest" %% "scalatest" % "1.9.1" % "test"
+libraryDependencies += "org.rogach" %% "scallop" % "0.9.5"
 
 buildInfoSettings
 
