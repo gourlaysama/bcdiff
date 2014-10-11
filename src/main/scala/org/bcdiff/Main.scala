@@ -1,8 +1,11 @@
 package org.bcdiff
 
-import java.io.{FileFilter, FilenameFilter, File}
+import java.io.{FileFilter, FilenameFilter, File, OutputStreamWriter, StringWriter}
 import org.bcdiff.ClassDiffer.{Full, Stat, Shortstat}
 import java.util.zip.ZipFile
+import scala.concurrent.{Future, Await}
+import scala.concurrent.duration.Duration
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * Main entry point.
@@ -27,10 +30,11 @@ object Main extends App {
     sys.exit(1)
   }
 
+  val out = new OutputStreamWriter(System.out)
+
   val typ = if (c.shortstat()) Shortstat
             else if (c.stat()) Stat
             else               Full
-
 
   if (f1.isDirectory && f2.isDirectory) {
     val classFilter = new FilenameFilter {
@@ -40,37 +44,63 @@ object Main extends App {
       def accept(file: File) = file.isDirectory
     }
 
-    def recDiff(d1: File, d2: File) {
-      val m = d1.list(classFilter).toList ::: d2.list(classFilter).toList
-      m.foreach(f => ClassDiffer(new File(d1, f), new File(d2, f), c.color(), c.methods(), typ).diff())
+    def recDir(d: File) = d.listFiles(classFilter).toList
 
-      val d = d1.listFiles(dirFilter).toList ::: d2.listFiles(dirFilter).toList
-      d.foreach(f => recDiff(new File(d1, f.getName), new File(d2, f.getName)))
+    def classes(d: File): List[String] = d.listFiles(dirFilter).flatMap{ dir =>
+      classes(dir).map(c => dir.getName + File.separator + c)
+    }.toList ::: d.list(classFilter).toList
+
+    val m = classes(f1).toSet ++ classes(f2)
+
+    try {
+    val all = m.map{ e => Future {
+        val tmpOut = new StringWriter()
+        val fi1 = ClassDiffer.FileInfo(new File(f1, e))
+        val fi2 = ClassDiffer.FileInfo(new File(f2, e))
+
+        ClassDiffer.diff(fi1, fi2, c.color(), c.methods(), typ, tmpOut)
+        tmpOut
+    }}.foreach{f =>
+      out.append(Await.result(f, Duration.Inf).getBuffer)
+      out.flush
     }
 
-    recDiff(f1, f2)
+    } finally {
+      out.flush()
+      out.close()
+    }
   } else if (f1.getName.endsWith(".jar") && f2.getName.endsWith(".jar")) {
     val ff1 = new ZipFile(f1)
     val ff2 = new ZipFile(f2)
 
     import scala.collection.JavaConversions._
     try {
-    val m = ff1.entries.filter(_.getName.endsWith(".class")).filterNot(_.isDirectory).map(_.getName).toList :::
-      ff2.entries.filter(_.getName.endsWith(".class")).filterNot(_.isDirectory).map(_.getName).toList
-
-    m.foreach { e =>
+    val m = ff1.entries.filter(_.getName.endsWith(".class")).filterNot(_.isDirectory).map(_.getName).toSet ++
+      ff2.entries.filter(_.getName.endsWith(".class")).filterNot(_.isDirectory).map(_.getName).toSet
+    val all = m.map{ e => Future {
+        val tmpOut = new StringWriter()
         val jarpath = s"#!$e"
         val fi1 = new ClassDiffer.FileInfo(Option(ff1.getEntry(e)).map(ff1.getInputStream), f1.getName, f1.getPath + jarpath,
           f1.getAbsolutePath + jarpath)
         val fi2 = new ClassDiffer.FileInfo(Option(ff2.getEntry(e)).map(ff2.getInputStream), f2.getName,
           f2.getPath + jarpath, f2.getAbsolutePath + jarpath)
-
-        new ClassDiffer(fi1, fi2, c.color(), c.methods(), typ).diff()
+        ClassDiffer.diff(fi1, fi2, c.color(), c.methods(), typ, tmpOut)
+        tmpOut
+    }}.foreach{f =>
+      out.append(Await.result(f, Duration.Inf).getBuffer)
+      out.flush
     }
+
     } finally {
+      out.flush()
+      out.close()
       ff1.close()
       ff2.close()
     }
 
-  } else ClassDiffer(f1, f2, c.color(), c.methods(), typ).diff()
+  } else {
+    ClassDiffer.diff(f1, f2, c.color(), c.methods(), typ, out)
+    out.flush()
+    out.close()
+  }
 }

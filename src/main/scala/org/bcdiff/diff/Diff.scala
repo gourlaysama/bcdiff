@@ -6,6 +6,7 @@ import annotation.tailrec
 import org.objectweb.asm.tree.{InsnList, AbstractInsnNode}
 import java.util.ListIterator
 import collection.JavaConversions
+import java.io.{Writer, PrintWriter}
 
 object Diff {
 
@@ -24,7 +25,9 @@ object Diff {
  *
  * @author Antoine Gourlay
  */
-private[bcdiff] class Diff(ains: InsnList, bins: InsnList) {
+private[bcdiff] class Diff(ains: InsnList, bins: InsnList, output: Writer) {
+
+  private[this] val out = new PrintWriter(output)
 
   import Diff._
 
@@ -174,7 +177,7 @@ private[bcdiff] class Diff(ains: InsnList, bins: InsnList) {
 
     // first diagonal matching
     state = slide(state)
-    //println(state)
+    //out.println(state)
 
     // special case of equal inputs
     var changes: List[Change] = state.head._2.changes
@@ -245,19 +248,19 @@ private[bcdiff] class Diff(ains: InsnList, bins: InsnList) {
 
     def added(pos: Int, s: String) {
       if (color) {
-        Console.println(Console.GREEN + Console.BOLD + "+ " + Console.RESET + Console.GREEN + intPrint(pos) + ": "
+        out.println(Console.GREEN + Console.BOLD + "+ " + Console.RESET + Console.GREEN + intPrint(pos) + ": "
           + Console.BOLD + s + Console.RESET)
       } else {
-        println("+ " + intPrint(pos) + ": " + s)
+        out.println("+ " + intPrint(pos) + ": " + s)
       }
     }
 
     def removed(pos: Int, s: String) {
       if (color) {
-        Console.println(Console.RED + Console.BOLD + "- " + Console.RESET + Console.RED + intPrint(pos) + ": "
+        out.println(Console.RED + Console.BOLD + "- " + Console.RESET + Console.RED + intPrint(pos) + ": "
           + Console.BOLD + s + Console.RESET)
       } else {
-        println("- " + intPrint(pos) + ": " + s)
+        out.println("- " + intPrint(pos) + ": " + s)
       }
     }
 
@@ -283,8 +286,8 @@ private[bcdiff] class Diff(ains: InsnList, bins: InsnList) {
         i = i + 1
         j = j + 1
         b(j) match {
-          case bc: LabelAwareByteCode => println("  " + intPrint(j) + ": " + bc.toString(keptLabels))
-          case c => println(s"  ${intPrint(j)}: $c")
+          case bc: LabelAwareByteCode => out.println("  " + intPrint(j) + ": " + bc.toString(keptLabels))
+          case c => out.println(s"  ${intPrint(j)}: $c")
         }
       case Insert =>
         j = j + 1

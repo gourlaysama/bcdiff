@@ -6,6 +6,7 @@ import org.objectweb.asm.tree._
 import org.objectweb.asm.ClassReader
 import Diff._
 import ClassDiffer._
+import java.io.{Writer, PrintWriter, StringWriter}
 
 object ClassDiffer {
 
@@ -22,7 +23,7 @@ object ClassDiffer {
       new FileInfo(in, name, path, abspath)
 
     def apply(f: File) = {
-      def safeOpen(f: File): Option[InputStream] = {
+      def safeOpen(f: File): Option[InputStream] = if (f.exists()) {
         var r: FileInputStream = null
         try {
           r = new FileInputStream(f)
@@ -30,10 +31,10 @@ object ClassDiffer {
         } catch {
           case e: Exception =>
             Console.err.println(s"Failed to open file '${f.getAbsolutePath}'.")
-            r.close()
+            if (r != null) r.close()
             None
         }
-      }
+      } else None
 
       new FileInfo(safeOpen(f), f.getName, f.getPath, f.getAbsolutePath)
     }
@@ -41,8 +42,11 @@ object ClassDiffer {
 
   class FileInfo(val in: Option[InputStream], val name: String, val path: String, val abspath: String)
 
-  def apply(f1: File, f2: File, color: Boolean, methods: Boolean, typ: DiffType): ClassDiffer =
-    new ClassDiffer(FileInfo(f1), FileInfo(f2), color, methods, typ)
+  def diff(f1: File, f2: File, color: Boolean, methods: Boolean, typ: DiffType, output: Writer): Unit =
+    diff(FileInfo(f1), FileInfo(f2), color, methods, typ, output)
+
+  def diff(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, typ: DiffType, output: Writer): Unit =
+    new ClassDiffer(f1, f2, color, methods, typ, output).diff()
 
 }
 
@@ -53,7 +57,9 @@ object ClassDiffer {
  *
  * @author Antoine Gourlay
  */
-class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, typ: DiffType) {
+class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, typ: DiffType, val output: Writer) {
+
+  private[this] val out = new PrintWriter(output)
 
   // reads and makes sure we have valid class files
   private def prepare(): (Option[ClassNode], Option[ClassNode]) = {
@@ -80,7 +86,7 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
   /**
    * Diffs the two class files.
    */
-  def diff() {
+  def diff(): Boolean = {
 
     implicit val cn@(cn1, cn2) = prepare()
 
@@ -88,18 +94,18 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
 
     if (typ == Full) {
       // header
-      changes()
+      printHeader()
       val n1 = if (f1.in.isDefined) f1.path else "/dev/null"
       val n2 = if (f2.in.isDefined) f2.path else "/dev/null"
       if (color) {
         removed(s"-- $n1")
         added(s"++ $n2")
       } else {
-        println(s"--- $n1")
-        println(s"+++ $n2")
+        out.println(s"--- $n1")
+        out.println(s"+++ $n2")
       }
 
-      println()
+      out.println()
 
       // basic fields
       compareFieldPretty(_.version)("Bytecode version: " + _)
@@ -116,7 +122,7 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
       // TODO: attributes
       // TODO: inner classes
 
-      println()
+      out.println()
     }
 
     if (methods) {
@@ -138,8 +144,8 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
         only1.foreach(a => removed((a._1._2, a._2), prettyM))
         only2.foreach(a => added((a._1._2, a._2), prettyM))
       } else if (typ == Stat) {
-        only1.foreach(a => println(s"${intPrint(a._2.instructions.size())} ---------- | ${a._2.name} // Signature: ${a._2.desc}  ; removed"))
-        only2.foreach(a => println(s"${intPrint(a._2.instructions.size())} ++++++++++ | ${a._2.name} // Signature: ${a._2.desc}  ; added"))
+        only1.foreach(a => out.println(s"${intPrint(a._2.instructions.size())} ---------- | ${a._2.name} // Signature: ${a._2.desc}  ; removed"))
+        only2.foreach(a => out.println(s"${intPrint(a._2.instructions.size())} ++++++++++ | ${a._2.name} // Signature: ${a._2.desc}  ; added"))
       }
 
       // methods with identical name+signature --> diff
@@ -148,13 +154,14 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
       }.count(_ == true)
 
       if (typ != Full && changed)
-        println(s"${only1.size} methods removed, ${only2.size} added, $modcount modified")
+        out.println(s"${only1.size} methods removed, ${only2.size} added, $modcount modified")
     }
+    changed
   }
 
   private def diffMethods(met1: MethodNode, met2: MethodNode): Boolean = {
 
-    val d = new Diff(met1.instructions, met2.instructions)
+    val d = new Diff(met1.instructions, met2.instructions, output)
     val diff = d.diff()
     val accessmodified = getFlags(met1.access, ByteCode.method_access_flags) != getFlags(met2.access, ByteCode.method_access_flags)
     val modified = diff.exists(_ != Keep) || accessmodified
@@ -163,8 +170,8 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
     if (modified) {
       changes()
       if (typ == Full) {
-        println()
-        println(s"@@ Method ${met1.name} // Signature: ${met1.desc}")
+        out.println()
+        out.println(s"@@ Method ${met1.name} // Signature: ${met1.desc}")
 
         // diff access flags
         compareAccessFlags(Some(met1.access), Some(met2.access), ByteCode.method_access_flags)
@@ -190,15 +197,15 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
         }
 
         if (color)
-          print(intPrint(total) + " " + Console.GREEN + Console.BOLD + pl.mkString + Console.RED + mn.mkString + Console.RESET)
+          out.print(intPrint(total) + " " + Console.GREEN + Console.BOLD + pl.mkString + Console.RED + mn.mkString + Console.RESET)
         else
-          print(intPrint(total) + " " + pl.mkString + mn.mkString)
+          out.print(intPrint(total) + " " + pl.mkString + mn.mkString)
 
-        print(s" | ${met1.name} // Signature: ${met1.desc}")
+        out.print(s" | ${met1.name} // Signature: ${met1.desc}")
         if (accessmodified)
-          println("  ; access flags changed")
+          out.println("  ; access flags changed")
         else
-          println()
+          out.println()
       }
     }
 
@@ -270,10 +277,12 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
   private var changed: Boolean = false
   private def changes() {
     if (!changed) {
-      println(s"bcdiff ${f1.path} ${f2.path}")
+      printHeader()
       changed = true
     }
   }
+
+  private def printHeader(): Unit = out.println(s"bcdiff ${f1.path} ${f2.path}")
 
   private def compareFieldPretty[T](f: ClassNode => T)(pretty: T => String)(implicit cn: (Option[ClassNode], Option[ClassNode])) {
     check(cn._1.flatMap(c => Option(f(c))), cn._2.flatMap(c => Option(f(c))))(pretty)
@@ -290,16 +299,16 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
 
   private def added[T](s: T, pretty: T => String = toS[T] _) {
     if (color)
-      Console.println(Console.GREEN + Console.BOLD + "+" + pretty(s) + Console.RESET)
+      out.println(Console.GREEN + Console.BOLD + "+" + pretty(s) + Console.RESET)
     else
-      println("+ " + pretty(s))
+      out.println("+ " + pretty(s))
   }
 
   private def removed[T](s: T, pretty: T => String = toS[T] _) {
     if (color)
-      Console.println(Console.RED + Console.BOLD + "-" + pretty(s) + Console.RESET)
+      out.println(Console.RED + Console.BOLD + "-" + pretty(s) + Console.RESET)
     else
-      println("- " + pretty(s))
+      out.println("- " + pretty(s))
   }
 
   private def clazzN(s: String) = s.replace('/', '.')
