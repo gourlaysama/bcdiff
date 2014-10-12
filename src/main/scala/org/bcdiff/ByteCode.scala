@@ -63,7 +63,7 @@ object ByteCode {
     a.getOpcode match {
       case op@(BIPUSH | SIPUSH | NEWARRAY) => IntOp(op, a.asInstanceOf[IntInsnNode].operand)
       case LDC => LoadOp(a.asInstanceOf[LdcInsnNode].cst)
-      case op@(ILOAD | FLOAD | DLOAD | ALOAD | ISTORE | LSTORE | FSTORE | DSTORE | ASTORE) =>
+      case op@(ILOAD | FLOAD | DLOAD | LLOAD | ALOAD | ISTORE | LSTORE | FSTORE | DSTORE | ASTORE) =>
         VarOp(op, a.asInstanceOf[VarInsnNode].`var`)
       case IINC =>
         val b = a.asInstanceOf[IincInsnNode]
@@ -304,6 +304,7 @@ case class JumpOp(opCode: Int, label: Label) extends ByteCode with LabelAwareByt
       case IFNE => "ifne "
       case IFGE => "ifge "
       case IFGT => "ifgt "
+      case IFLT => "iflt "
       case IFLE => "ifle "
       case IF_ICMPEQ => "if_icmpeq "
       case IF_ICMPNE => "if_icmpne "
