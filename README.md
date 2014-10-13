@@ -9,6 +9,7 @@ bcdiff supports:
  * displaying shorter statistics on the difference between two class files (`--stat` and `--shortstat`),
  * colored output (`--color` is on by default, `--nocolor` to disable),
  * doing the above on between two directories of class files or two jar files,
+ * filtering on the (full) class name with a regex, as in `-c 'org\.foo\.bar\..*Test'`,
  * and... that's all for now, but there is more to come!
 
 # Quick example
