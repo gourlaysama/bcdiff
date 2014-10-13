@@ -36,6 +36,14 @@ object Main extends App {
             else if (c.stat()) Stat
             else               Full
 
+  val classRegex = c.classFilter.filterNot(_.isEmpty).map(_.r).get
+
+  def filterClass(s: Set[String]): Set[String] = {
+    def cName(n: String) = n.dropRight(6).replace(File.separatorChar, '.')
+
+    classRegex.fold(s)(r => s.filter(c => r.findFirstIn(cName(c)).isDefined))
+  }
+
   if (f1.isDirectory && f2.isDirectory) {
     val classFilter = new FilenameFilter {
       def accept(dir: File, name: String): Boolean = name.endsWith(".class")
@@ -50,7 +58,7 @@ object Main extends App {
       classes(dir).map(c => dir.getName + File.separator + c)
     }.toList ::: d.list(classFilter).toList
 
-    val m = classes(f1).toSet ++ classes(f2)
+    val m = filterClass(classes(f1).toSet ++ classes(f2))
 
     try {
     val all = m.map{ e => Future {
@@ -75,8 +83,8 @@ object Main extends App {
 
     import scala.collection.JavaConversions._
     try {
-    val m = ff1.entries.filter(_.getName.endsWith(".class")).filterNot(_.isDirectory).map(_.getName).toSet ++
-      ff2.entries.filter(_.getName.endsWith(".class")).filterNot(_.isDirectory).map(_.getName).toSet
+    val m = filterClass(ff1.entries.filter(_.getName.endsWith(".class")).filterNot(_.isDirectory).map(_.getName).toSet ++
+      ff2.entries.filter(_.getName.endsWith(".class")).filterNot(_.isDirectory).map(_.getName).toSet)
     val all = m.map{ e => Future {
         val tmpOut = new StringWriter()
         val jarpath = s"#!$e"
