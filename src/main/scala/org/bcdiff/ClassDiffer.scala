@@ -144,8 +144,14 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
         only1.foreach(a => removed((a._1._2, a._2), prettyM))
         only2.foreach(a => added((a._1._2, a._2), prettyM))
       } else if (typ == Stat) {
-        only1.foreach(a => out.println(s"${intPrint(a._2.instructions.size())} ---------- | ${a._2.name} // Signature: ${a._2.desc}  ; removed"))
-        only2.foreach(a => out.println(s"${intPrint(a._2.instructions.size())} ++++++++++ | ${a._2.name} // Signature: ${a._2.desc}  ; added"))
+        if (color) {
+          import Console.{GREEN, RED, BOLD, RESET}
+          only1.foreach(a => out.println(s"${intPrint(a._2.instructions.size())} $BOLD$RED----------$RESET | ${a._2.name} // Signature: ${a._2.desc}  $BOLD${RED}removed$RESET"))
+          only2.foreach(a => out.println(s"${intPrint(a._2.instructions.size())} $BOLD$GREEN++++++++++$RESET | ${a._2.name} // Signature: ${a._2.desc}  $BOLD${GREEN}added$RESET"))
+        } else {
+          only1.foreach(a => out.println(s"${intPrint(a._2.instructions.size())} ---------- | ${a._2.name} // Signature: ${a._2.desc}  removed"))
+          only2.foreach(a => out.println(s"${intPrint(a._2.instructions.size())} ++++++++++ | ${a._2.name} // Signature: ${a._2.desc}  added"))
+        }
       }
 
       // methods with identical name+signature --> diff
