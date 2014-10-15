@@ -32,7 +32,7 @@ private[bcdiff] class Diff(ains: InsnList, bins: InsnList, output: Writer) {
   import Diff._
 
   // equivalent labels found during the first diff pass
-  private var eqlabs = Map[Label, Label]()
+  private var eqlabs = Map[Label, Set[Label]]()
 
   // the actual data we operate on
   // (list of bytecode, map(line number -> label), map(label -> line number))
@@ -99,9 +99,15 @@ private[bcdiff] class Diff(ains: InsnList, bins: InsnList, output: Writer) {
   def diff(): Seq[Change] = diff((0, a.length - 1), (0, b.length - 1))
 
 
-  private def diff(rangeA: (Int, Int), rangeB: (Int, Int), eqlbs: Option[Map[Label, Label]] = None): Seq[Change] = {
+  private def diff(rangeA: (Int, Int), rangeB: (Int, Int), eqlbs: Option[Map[Label, Set[Label]]] = None): Seq[Change] = {
     // we start at the last character, going backwards until we reach position (0,0) (or the equivalent in the
     // given ranges)
+
+    if (Main.conf.debug()) {
+      if (!apos.isEmpty && eqlbs.isEmpty) println(apos.mkString("Labels a:\n  ", "\n  ", ""))
+      if (!bpos.isEmpty && eqlbs.isEmpty) println(bpos.mkString("Labels b:\n  ", "\n  ", ""))
+      eqlbs.filter(!_.isEmpty).foreach(m => out.println(m.mkString("Merging labels:\n  ","\n  ","")))
+    }
 
     // move left (== removals)
     def left(s: Map[Int, Point]): Map[Int, Point] = {
@@ -146,8 +152,8 @@ private[bcdiff] class Diff(ains: InsnList, bins: InsnList, output: Writer) {
     val matches: (ByteCode, ByteCode) => Boolean = eqlbs.map {
       m =>
         (a: ByteCode, b: ByteCode) => (a, b) match {
-          case (bc: LabelAwareByteCode, bc2: LabelAwareByteCode) =>
-            bc.linkedLabels.map(m.get).flatten.map(_.toString).toSet == bc2.linkedLabels.map(_.toString).toSet
+          case (bc: LabelAwareByteCode, bc2: LabelAwareByteCode) => bc.equalIgnoreLabels(bc2) &&
+            bc.linkedLabels.map(m.get).flatten.flatten.map(_.toString).toSet.exists(bc2.linkedLabels.map(_.toString).toSet.apply)
           case _ => a == b
         }
     }.getOrElse((a: ByteCode, b: ByteCode) => a == b)
@@ -211,8 +217,7 @@ private[bcdiff] class Diff(ains: InsnList, bins: InsnList, output: Writer) {
       def acc(i: Int, j: Int, ch: List[Change]) {
         (alab.get(i), blab.get(j)) match {
           case (Some(l1), Some(l2)) =>
-            if (!eqlabs.contains(l1))
-              eqlabs = eqlabs + (l1 -> l2)
+              eqlabs = eqlabs + (l1 -> eqlabs.get(l1).fold(Set(l2))(s => s + l2))
           case _ =>
         }
 
@@ -278,7 +283,7 @@ private[bcdiff] class Diff(ains: InsnList, bins: InsnList, output: Writer) {
 
     // utility mapping functions for getting label location
     def insertedLabels(l: Label): Option[Int] = bpos.get(l)
-    def removedLabels(l: Label): Option[Int] = eqlabs.get(l).flatMap(bpos.get).orElse(apos.get(l))
+    def removedLabels(l: Label): Option[Int] = eqlabs.get(l).flatMap(s => bpos.get(s.head)).orElse(apos.get(l))
     def keptLabels(l: Label): Option[Int] = bpos.get(l).orElse(apos.get(l))
 
     ch.map {

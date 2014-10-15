@@ -13,7 +13,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
  * @author Antoine Gourlay
  */
 object Main extends App {
-  val c = new Conf(args)
+  private val c = new Conf(args)
+
+  def conf = c
 
   val files = c.files().map(new File(_))
 

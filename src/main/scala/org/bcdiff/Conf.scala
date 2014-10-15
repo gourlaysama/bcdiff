@@ -34,6 +34,8 @@ class Conf(arg: Seq[String]) extends ScallopConf(arg) {
 
   val classFilter = opt[String](descr = "Only process classes whose name match the provided regex.", argName = "regex")
 
+  val debug = opt[Boolean](hidden = false, noshort = true)
+
   val files = trailArg[List[String]](descr = "Class files / folders to diff (exactly 2)", required = true)
 
   validate(files) {

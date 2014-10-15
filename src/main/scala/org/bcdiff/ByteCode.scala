@@ -107,6 +107,7 @@ sealed trait ByteCode {
 sealed trait LabelAwareByteCode extends ByteCode {
   def toString(mapping: Label => Option[Int]): String
   def linkedLabels: Seq[Label]
+  def equalIgnoreLabels(other: LabelAwareByteCode): Boolean
 }
 
 case class ZeroOp(opCode: Int) extends ByteCode {
@@ -325,6 +326,8 @@ case class JumpOp(opCode: Int, label: Label) extends ByteCode with LabelAwareByt
     toString + mapping(label).map(_.toString + ":").getOrElse("???")
 
   def linkedLabels = List(label)
+
+  def equalIgnoreLabels(o: LabelAwareByteCode) = o match { case JumpOp(c, _) if c == opCode => true ; case _ => false }
 }
 
 case class LabelOp(label: Label) extends ByteCode {
@@ -369,6 +372,11 @@ case class TableSwitchOp(min: Int, max: Int, default: Label, labels: Seq[Label])
   }
 
   def linkedLabels: Seq[Label] = default +: labels
+
+  def equalIgnoreLabels(o: LabelAwareByteCode) = o match {
+    case TableSwitchOp(mi, ma, _, _) if mi == min && ma == max => true
+    case _ => false
+  }
 }
 
 case class LookupSwitchOp(default: Label, keys: Seq[Int], labels: Seq[Label]) extends ByteCode with LabelAwareByteCode {
@@ -391,6 +399,8 @@ case class LookupSwitchOp(default: Label, keys: Seq[Int], labels: Seq[Label]) ex
   }
 
   def linkedLabels: Seq[Label] = default +: labels
+
+  def equalIgnoreLabels(o: LabelAwareByteCode) = o match { case LookupSwitchOp(_, k, _) if k.toSet == keys.toSet => true ; case _ => false }
 }
 
 case class MultiArrayOp(desc: String, dim: Int) extends ByteCode {
