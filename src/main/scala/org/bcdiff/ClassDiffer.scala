@@ -42,10 +42,10 @@ object ClassDiffer {
 
   class FileInfo(val in: Option[InputStream], val name: String, val path: String, val abspath: String)
 
-  def diff(f1: File, f2: File, color: Boolean, methods: Boolean, typ: DiffType, output: Writer): Unit =
+  def diff(f1: File, f2: File, color: Boolean, methods: Boolean, typ: DiffType, output: Writer): Boolean =
     diff(FileInfo(f1), FileInfo(f2), color, methods, typ, output)
 
-  def diff(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, typ: DiffType, output: Writer): Unit =
+  def diff(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, typ: DiffType, output: Writer): Boolean =
     new ClassDiffer(f1, f2, color, methods, typ, output).diff()
 
 }

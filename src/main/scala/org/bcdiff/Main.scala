@@ -68,10 +68,9 @@ object Main extends App {
         val fi1 = ClassDiffer.FileInfo(new File(f1, e))
         val fi2 = ClassDiffer.FileInfo(new File(f2, e))
 
-        ClassDiffer.diff(fi1, fi2, c.color(), c.methods(), typ, tmpOut)
-        tmpOut
+        if (ClassDiffer.diff(fi1, fi2, c.color(), c.methods(), typ, tmpOut)) Some(tmpOut) else None
     }}.foreach{f =>
-      out.append(Await.result(f, Duration.Inf).getBuffer)
+      Await.result(f, Duration.Inf).map(_.getBuffer).foreach(out.append)
       out.flush
     }
 
@@ -94,10 +93,9 @@ object Main extends App {
           f1.getAbsolutePath + jarpath)
         val fi2 = new ClassDiffer.FileInfo(Option(ff2.getEntry(e)).map(ff2.getInputStream), f2.getName,
           f2.getPath + jarpath, f2.getAbsolutePath + jarpath)
-        ClassDiffer.diff(fi1, fi2, c.color(), c.methods(), typ, tmpOut)
-        tmpOut
+        if (ClassDiffer.diff(fi1, fi2, c.color(), c.methods(), typ, tmpOut)) Some(tmpOut) else None
     }}.foreach{f =>
-      out.append(Await.result(f, Duration.Inf).getBuffer)
+      Await.result(f, Duration.Inf).map(_.getBuffer).foreach(out.append)
       out.flush
     }
 
