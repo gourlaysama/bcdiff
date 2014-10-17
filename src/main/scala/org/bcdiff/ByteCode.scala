@@ -338,10 +338,17 @@ case class LabelOp(label: Label) extends ByteCode {
   override def toString = "label " + label
 }
 
-case class LoadOp(arg: AnyRef) extends ByteCode {
+case class LoadOp(arg: Any) extends ByteCode {
   val opCode = LDC
 
   override def toString = s"ldc $arg // ${arg.getClass.getName}"
+
+  override def equals(a: Any): Boolean = a match {
+    case LoadOp(barg: Double) if barg.isNaN => arg match { case d: Double => d.isNaN; case _ => false }
+    case LoadOp(barg: Float) if barg.isNaN => arg match { case d: Float => d.isNaN; case _ => false }
+    case LoadOp(barg) => arg == barg
+    case _ => false
+  }
 }
 
 case class IincOp(variable: Int, increment: Int) extends ByteCode {
