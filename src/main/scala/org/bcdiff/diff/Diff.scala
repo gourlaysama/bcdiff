@@ -306,7 +306,7 @@ private[bcdiff] class Diff(ains: InsnList, bins: InsnList, output: Writer) {
 
 
     while (pos < ch.length) {
-      while(ch(pos) != Keep && pos < ch.length) {
+      while(pos < ch.length && ch(pos) != Keep) {
         ch(pos) match {
           case Insert =>
             j += 1
