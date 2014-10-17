@@ -7,6 +7,7 @@ import org.objectweb.asm.tree.{InsnList, AbstractInsnNode}
 import java.util.ListIterator
 import collection.JavaConversions
 import java.io.{Writer, PrintWriter}
+import Console.{GREEN, RED, MAGENTA, RESET, BOLD}
 
 object Diff {
 
@@ -96,7 +97,7 @@ private[bcdiff] class Diff(ains: InsnList, bins: InsnList, output: Writer) {
   /**
    * Diffs the two bytecode arrays.
    */
-  def diff(): Seq[Change] = diff((0, a.length - 1), (0, b.length - 1))
+  def diff(): Array[Change] = diff((0, a.length - 1), (0, b.length - 1)).toArray
 
 
   private def diff(rangeA: (Int, Int), rangeB: (Int, Int), eqlbs: Option[Map[Label, Set[Label]]] = None): Seq[Change] = {
@@ -249,7 +250,9 @@ private[bcdiff] class Diff(ains: InsnList, bins: InsnList, output: Writer) {
    * @param ch a list of change to get from a to b
    * @param color whether the output should be colored
    */
-  def formatChanges(ch: Seq[Change], color: Boolean) {
+  def formatChanges(ch: Array[Change], color: Boolean, ctx: Int) {
+
+    val full = ctx == -1
 
     def added(pos: Int, s: String) {
       if (color) {
@@ -278,37 +281,64 @@ private[bcdiff] class Diff(ains: InsnList, bins: InsnList, output: Writer) {
         i.toString
     }
 
-    var i = -1
-    var j = -1
-
     // utility mapping functions for getting label location
     def insertedLabels(l: Label): Option[Int] = bpos.get(l)
     def removedLabels(l: Label): Option[Int] = eqlabs.get(l).flatMap(s => bpos.get(s.head)).orElse(apos.get(l))
     def keptLabels(l: Label): Option[Int] = bpos.get(l).orElse(apos.get(l))
 
-    ch.map {
-      case Keep =>
-        i = i + 1
-        j = j + 1
-        b(j) match {
-          case bc: LabelAwareByteCode => out.println("  " + intPrint(j) + ": " + bc.toString(keptLabels))
-          case c => out.println(s"  ${intPrint(j)}: $c")
+    // init
+    val first = ch.indexWhere(_ != Keep)
+    val start = math.max(first - ctx, 0)
+    var i = math.max(start - 1, -1)
+    var j = math.max(start - 1, -1)
+    var pos = math.min(start + ctx, first)
+
+    def keepPrint(idx: Int): Unit = b(idx) match {
+      case bc: LabelAwareByteCode => out.println("  " + intPrint(idx) + ": " + bc.toString(keptLabels))
+      case c => out.println(s"  ${intPrint(idx)}: $c")
+    }
+
+    def print(idx: Int): Unit = {i += 1; j += 1; keepPrint(idx)}
+
+
+    out.println(s"${MAGENTA}@@ -${math.max(start, 0)} +${math.max(start, 0)}  @@$RESET")
+    (start until pos).foreach(print)
+
+
+    while (pos < ch.length) {
+      while(ch(pos) != Keep && pos < ch.length) {
+        ch(pos) match {
+          case Insert =>
+            j += 1
+            b(j) match {
+              case bc: LabelAwareByteCode => added(j, bc.toString(insertedLabels))
+              case c => added(j, c.toString)
+            }
+          case Remove =>
+            i += 1
+            a(i) match {
+              // TODO: find a way to visually differentiate old vs. new instruction number in jumps
+              case bc: LabelAwareByteCode => removed(i, bc.toString(removedLabels))
+              case c => removed(i, c.toString)
+            }
         }
-      case Insert =>
-        j = j + 1
-        b(j) match {
-          case bc: LabelAwareByteCode => added(j, bc.toString(insertedLabels))
-          case c => added(j, c.toString)
+        pos += 1
+      }
+      val restart = ch.indexWhere(_ != Keep, pos)
+      val len = if (restart == -1) ch.length - pos else restart - pos
+      if (len > 2*ctx) {
+        ((j + 1) to (j + ctx)).foreach(print)
+        if (restart != -1) {
+          out.println(s"${MAGENTA}@@ -${i + restart - pos - ctx} +${j + restart - pos - ctx}  @@$RESET")
+          ((j + restart - pos - ctx) to (j + restart - pos - 1)).foreach(print)
+          i += len - 2*ctx
+          j += len - 2*ctx
         }
-      case Remove =>
-        i = i + 1
-        a(i) match {
-          // TODO: find a way to visually differentiate old vs. new instruction number in jumps
-          case bc: LabelAwareByteCode => removed(i, bc.toString(removedLabels))
-          case c => removed(i, c.toString)
-        }
+      } else {
+        ((j + 1) to (j + len)).foreach(print)
+      }
+
+      pos += len
     }
   }
-
-
 }

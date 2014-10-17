@@ -91,16 +91,15 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
 
     implicit val cn@(cn1, cn2) = prepare()
 
+    if (showHeaders) {
+      if (color)
+        out.println(s"${YELLOW}bcdiff ${f1.path} ${f2.path}$RESET")
+      else
+        out.println(s"bcdiff ${f1.path} ${f2.path}")
+    }
 
 
     if (typ == Full) {
-      if (showHeaders) {
-        if (color)
-          out.println(s"${YELLOW}bcdiff ${f1.path} ${f2.path}$RESET")
-        else
-          out.println(s"bcdiff ${f1.path} ${f2.path}")
-      }
-
       val n1 = if (f1.in.isDefined) f1.path else "/dev/null"
       val n2 = if (f2.in.isDefined) f2.path else "/dev/null"
       if (color) {
@@ -181,13 +180,13 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
       changes()
       if (typ == Full) {
         out.println()
-        out.println(s"@@ Method ${met1.name} // Signature: ${met1.desc}")
+        out.println(s"Method ${met1.name} // Signature: ${met1.desc}")
 
         // diff access flags
         compareAccessFlags(Some(met1.access), Some(met2.access), ByteCode.method_access_flags)
 
         // pretty print bytecode diff
-        d.formatChanges(diff, color)
+        d.formatChanges(diff, color, Main.conf.context())
       } else if (typ == Stat) {
         var kp = 0
         var ins = 0

@@ -32,6 +32,8 @@ class Conf(arg: Seq[String]) extends ScallopConf(arg) {
   val methods = toggle("methods", default = Some(true), descrYes = "Diff the flags and content (byte-codes) of methods (default)",
   descrNo = "Do not diff methods", noshort = true)
 
+  val context = opt[Int]("context", descr = "Number of context lines to show around diffs. Use -1 to show all.", default = Some(3), noshort = true)
+
   val classFilter = opt[String](descr = "Only process classes whose name match the provided regex.", argName = "regex")
 
   val debug = opt[Boolean](hidden = false, noshort = true)
