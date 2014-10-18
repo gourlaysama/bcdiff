@@ -43,7 +43,7 @@ object Main extends App {
   def filterClass(s: Set[String]): Set[String] = {
     def cName(n: String) = n.dropRight(6).replace(File.separatorChar, '.')
 
-    classRegex.fold(s)(r => s.filter(c => r.findFirstIn(cName(c)).isDefined))
+    classRegex.fold(s)(r => s.filter(c => r.unapplySeq(cName(c)).isDefined))
   }
 
   if (f1.isDirectory && f2.isDirectory) {

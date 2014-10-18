@@ -130,7 +130,7 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
 
     if (methods) {
       // methods
-      val nameFilter: MethodNode => Boolean = Main.conf.methodNameFilter.map(_.r).get.fold((_: MethodNode) => true)(r => (c: MethodNode) => r.findFirstIn(c.name).isDefined)
+      val nameFilter: MethodNode => Boolean = Main.conf.methodNameFilter.map(_.r).get.fold((_: MethodNode) => true)(r => (c: MethodNode) => r.unapplySeq(c.name).isDefined)
 
       val methods1 = cn1.toSeq.flatMap(c => uglyCast[MethodNode](c.methods)).filter(nameFilter).map(a => ((a.name, a.desc), a)).toMap
       val methods2 = cn2.toSeq.flatMap(c => uglyCast[MethodNode](c.methods)).filter(nameFilter).map(a => ((a.name, a.desc), a)).toMap
