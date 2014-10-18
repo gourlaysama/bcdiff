@@ -1,6 +1,27 @@
 Change history
 ==============
 
+0.4
+----
+
+ - New feature: filtering on the full class name using a regex
+
+ - New feature: filtering on the method name using a regex
+
+ - New feature: show only a few lines of context around diffs
+
+ - Vastly improved speed by analysing classes in parallel
+
+ - Improved color output
+
+ - Update to Scala 2.10.4
+
+ - Fix: some labels were not considered equals when they should have been
+
+ - Fix: two `ldc NaN` were not considered equal
+
+ - Fix: unexpected crash on `lload` and `iftl` opcodes
+
 0.3
 ----
 
