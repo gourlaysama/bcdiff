@@ -96,7 +96,7 @@ Running `bcdiff --stat` on the `scala.Enumeration` class file between Scala 2.9.
 
 ## Last release
 
-The last release is [bcdiff 0.3](https://github.com/gourlaysama/bcdiff/releases/tag/v0.3).
+The last release is [bcdiff 0.4](https://github.com/gourlaysama/bcdiff/releases/tag/v0.4).
 
 Download, extract and run `bin/bcdiff`.
 
