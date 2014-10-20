@@ -6,7 +6,7 @@ scalaVersion := "2.10.4"
 
 scalacOptions ++= Seq("-Xlint", "-deprecation", "-feature")
 
-libraryDependencies += "org.ow2.asm" % "asm-tree" % "4.2"
+libraryDependencies += "org.ow2.asm" % "asm-tree" % "5.0.3"
 
 libraryDependencies += "org.rogach" %% "scallop" % "0.9.5"
 
