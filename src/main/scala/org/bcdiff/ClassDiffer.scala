@@ -123,7 +123,7 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
       compareFieldPretty(_.outerClass)("Outer class: ",clazzN(_))
       // TODO: annotations
 
-      // TODO: fields
+      compareFields(cn1.map(c => uglyCast(c.fields)), cn2.map(c => uglyCast(c.fields)))
       // TODO: attributes
       // TODO: inner classes
     }
@@ -282,6 +282,36 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
       if (!v1.isEmpty) removed(v1, "Implemented interfaces: ", pretty)
       if (!v2.isEmpty) added(v2, "Implemented interfaces: ",  pretty)
 
+    }
+  }
+
+  private def compareFields(f1: Option[Seq[FieldNode]], f2: Option[Seq[FieldNode]]): Unit = {
+    val fi1 = f1.map(_.map(f => ((f.name, f.desc), f)).toMap).getOrElse(Map.empty)
+    val fi2 = f2.map(_.map(f => ((f.name, f.desc), f)).toMap).getOrElse(Map.empty)
+
+    val common = fi1.keySet.intersect(fi2.keySet)
+    val only1 = fi1 -- common
+    val only2 = fi2 -- common
+
+    if (only1.size != 0 || only2.size != 0) changes()
+
+    // added / removed methods
+    if (typ == Full) {
+      val prettyM: (FieldNode) => String = a =>
+      s"${a.name} = ${a.value} // Type: ${a.desc}"
+
+      only1.foreach(a => removed(a._2, "Field ", prettyM))
+      only2.foreach(a => added(a._2, "Field ", prettyM))
+
+      common.foreach{ c =>
+        val n1 = fi1(c)
+        val n2 = fi2(c)
+        if (n1.desc != n2.desc || n1.value != n2.value) {
+          changes()
+          removed(n1, "Field ", prettyM)
+          added(n2, "Field ", prettyM)
+        }
+      }
     }
   }
 
