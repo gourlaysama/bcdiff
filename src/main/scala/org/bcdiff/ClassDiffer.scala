@@ -125,7 +125,7 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
 
       compareFields(cn1.map(c => uglyCast(c.fields)), cn2.map(c => uglyCast(c.fields)))
       // TODO: attributes
-      // TODO: inner classes
+      compareInnerClasses(cn1.map(c => uglyCast(c.innerClasses)), cn2.map(c => uglyCast(c.innerClasses)))
     }
 
     if (methods) {
@@ -281,6 +281,32 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
 
       if (!v1.isEmpty) removed(v1, "Implemented interfaces: ", pretty)
       if (!v2.isEmpty) added(v2, "Implemented interfaces: ",  pretty)
+
+    }
+  }
+
+  private def compareInnerClasses(in1: Option[Seq[InnerClassNode]], in2: Option[Seq[InnerClassNode]]) {
+    val v1 = in1.map(_.map(i => (i.name, i)).toMap).getOrElse(Map.empty)
+    val v2 = in2.map(_.map(i => (i.name, i)).toMap).getOrElse(Map.empty)
+
+    if (v1.keySet != v2.keySet) {
+      val pretty: Set[String] => String = if (color) {
+        val rem = v1 -- v2.keySet
+        val add = v2 -- v1.keySet
+
+        x => x.map {
+          i =>
+            if (rem.contains(i))
+              Console.UNDERLINED + clazzN(i) + Console.RESET + Console.RED + Console.BOLD
+            else if (add.contains(i))
+              Console.UNDERLINED + clazzN(i) + Console.RESET + Console.GREEN + Console.BOLD
+            else
+              clazzN(i)
+        }.mkString(", ")
+      } else _.mkString(", ")
+
+      if (!v1.isEmpty) removed(v1.keySet, "Inner classes: ", pretty)
+      if (!v2.isEmpty) added(v2.keySet, "Inner classes: ",  pretty)
 
     }
   }
