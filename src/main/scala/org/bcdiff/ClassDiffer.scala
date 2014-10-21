@@ -114,7 +114,7 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
 
       // basic fields
       compareFieldPretty(_.version)("Bytecode version: ", _.toString)
-      compareFieldPretty(_.name)("Name: ", clazzN(_))
+      compareFieldPretty(_.name)("Class Name: ", clazzN(_))
       compareFieldPretty(_.superName)("Parent class: ", clazzN(_))
 
       // advanced fields
@@ -231,6 +231,11 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
   private def getFlags(a: Int, flags: Map[Int, String]): Set[Int] =
     flags.keySet.filter(k => (a & k) != 0)
 
+  private def showFlags(a: Int, flags: Map[Int, String]): String = {
+    val fl = getFlags(a, flags).map(flags.apply)
+    if (fl.isEmpty) "" else fl.mkString("Flags: ", ", ", "")
+  }
+
   private def compareAccessFlags(a1: Option[Int], a2: Option[Int], flags: Map[Int, String], header: String = "") {
 
     val v1 = a1.map(a => getFlags(a, flags)).getOrElse(Set.empty)
@@ -325,8 +330,10 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
       val prettyM: (FieldNode) => String = a =>
       s"${a.name} = ${a.value} // Type: ${a.desc}"
 
-      only1.foreach(a => removed(a._2, "Field ", prettyM))
-      only2.foreach(a => added(a._2, "Field ", prettyM))
+      val fullPrettyM: (FieldNode) => String = a => prettyM(a) + "; " + showFlags(a.access, ByteCode.field_access_flags)
+
+      only1.foreach(a => removed(a._2, "Field ", fullPrettyM))
+      only2.foreach(a => added(a._2, "Field ", fullPrettyM))
 
       common.foreach{ c =>
         val n1 = fi1(c)
