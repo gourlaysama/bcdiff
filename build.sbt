@@ -1,3 +1,5 @@
+import com.typesafe.sbt.packager.Keys._
+
 name := "bcdiff"
 
 version := "0.5-SNAPSHOT"
@@ -26,3 +28,5 @@ mappings in Universal ++= Seq(
   file("CHANGELOG.md") -> "doc/CHANGELOG",
   file("LICENSE") -> "doc/LICENSE")
 
+// set the color/nocolor default value from stdout being a terminal or not
+bashScriptExtraDefines := Seq("""[[ -t 1 ]] && set -- "-Dbcdiff.color=true" "$@"""")

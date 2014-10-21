@@ -1,6 +1,7 @@
 package org.bcdiff
 
 import org.rogach.scallop.ScallopConf
+import scala.util.Properties._
 
 /**
  * Command line argument configuration.
@@ -27,7 +28,7 @@ class Conf(arg: Seq[String]) extends ScallopConf(arg) {
   // general options
   val stat = opt[Boolean](descr = "Generate a diffstat.", noshort = true)
   val shortstat = opt[Boolean](descr = "output only the last line of --stat containing the number of added/modified/deleted entries.", noshort = true)
-  val color = toggle("color", default = Some(true), descrYes = "Show colored diff (default).", descrNo = "Turn off colored diff.", noshort = true)
+  val color = toggle("color", default = Some(propIsSet("bcdiff.color")), descrYes = "Show colored diff.", descrNo = "Turn off colored diff.", noshort = true)
 
   val methods = toggle("methods", default = Some(true), descrYes = "Diff the flags and content (byte-codes) of methods (default)",
   descrNo = "Do not diff methods", noshort = true)
