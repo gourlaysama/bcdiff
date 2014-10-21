@@ -231,7 +231,7 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
   private def getFlags(a: Int, flags: Map[Int, String]): Set[Int] =
     flags.keySet.filter(k => (a & k) != 0)
 
-  private def compareAccessFlags(a1: Option[Int], a2: Option[Int], flags: Map[Int, String]) {
+  private def compareAccessFlags(a1: Option[Int], a2: Option[Int], flags: Map[Int, String], header: String = "") {
 
     val v1 = a1.map(a => getFlags(a, flags)).getOrElse(Set.empty)
     val v2 = a2.map(a => getFlags(a, flags)).getOrElse(Set.empty)
@@ -253,8 +253,8 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
 
       } else _.map(flags.apply).mkString(", ")
 
-      if (!v1.isEmpty) removed(v1, "Flags: ", pretty)
-      if (!v2.isEmpty) added(v2, "Flags: ", pretty)
+      if (!v1.isEmpty) removed(v1, header + "Flags: ", pretty)
+      if (!v2.isEmpty) added(v2, header + "Flags: ", pretty)
 
     }
   }
@@ -321,7 +321,6 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
 
     if (only1.size != 0 || only2.size != 0) changes()
 
-    // added / removed methods
     if (typ == Full) {
       val prettyM: (FieldNode) => String = a =>
       s"${a.name} = ${a.value} // Type: ${a.desc}"
@@ -336,7 +335,7 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
           changes()
           removed(n1, "Field ", prettyM)
           added(n2, "Field ", prettyM)
-        }
+        } else compareAccessFlags(Some(n1.access), Some(n2.access), ByteCode.field_access_flags, "Field " + prettyM(n1) + "; ")
       }
     }
   }
