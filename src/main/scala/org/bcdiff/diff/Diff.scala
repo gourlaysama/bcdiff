@@ -288,6 +288,9 @@ private[bcdiff] class Diff(ains: InsnList, bins: InsnList, output: Writer) {
 
     // init
     val first = ch.indexWhere(_ != Keep)
+
+    if (first == -1) return
+
     val start = math.max(first - ctx, 0)
     var i = math.max(start - 1, -1)
     var j = math.max(start - 1, -1)
