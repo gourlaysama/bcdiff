@@ -1,4 +1,5 @@
 import com.typesafe.sbt.packager.Keys._
+import Bcdiff._
 
 name := "bcdiff"
 
@@ -26,7 +27,10 @@ packageArchetype.java_application
 
 mappings in Universal ++= Seq(
   file("CHANGELOG.md") -> "doc/CHANGELOG",
-  file("LICENSE") -> "doc/LICENSE")
+  file("LICENSE") -> "doc/LICENSE") ++
+  (pandoc.value ** "*.1").get.map(f => (f -> f.relativeTo(target.value).get.getPath))
 
 // set the color/nocolor default value from stdout being a terminal or not
 bashScriptExtraDefines := Seq("""[[ -t 1 ]] && set -- "-Dbcdiff.color=true" "$@"""")
+
+pandoc := pandocTask.value
