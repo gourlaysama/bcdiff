@@ -254,21 +254,31 @@ private[bcdiff] class Diff(ains: InsnList, bins: InsnList, output: Writer) {
 
     val full = ctx == -1
 
-    def added(pos: Int, s: String) {
+    // init
+    val first = ch.indexWhere(_ != Keep)
+
+    if (first == -1) return
+
+    val start = math.max(first - ctx, 0)
+    var i = math.max(start - 1, -1)
+    var j = math.max(start - 1, -1)
+    var pos = math.min(start + ctx, first)
+
+    def added(p: Int, s: String) {
       if (color) {
-        out.println(Console.GREEN + Console.BOLD + "+ " + Console.RESET + Console.GREEN + intPrint(pos) + ": "
-          + Console.BOLD + s + Console.RESET)
+        out.println(GREEN + BOLD + "+ " + RESET + GREEN + intPrint(p) + ": "
+          + BOLD + s + RESET)
       } else {
-        out.println("+ " + intPrint(pos) + ": " + s)
+        out.println("+ " + intPrint(p) + ": " + s)
       }
     }
 
-    def removed(pos: Int, s: String) {
+    def removed(p: Int, s: String) {
       if (color) {
-        out.println(Console.RED + Console.BOLD + "- " + Console.RESET + Console.RED + intPrint(pos) + ": "
-          + Console.BOLD + s + Console.RESET)
+        out.println(RED + BOLD + "- " + RESET + RED + intPrint(p) + ": "
+          + BOLD + s + RESET)
       } else {
-        out.println("- " + intPrint(pos) + ": " + s)
+        out.println("- " + intPrint(p) + ": " + s)
       }
     }
 
@@ -285,16 +295,6 @@ private[bcdiff] class Diff(ains: InsnList, bins: InsnList, output: Writer) {
     def insertedLabels(l: Label): Option[Int] = bpos.get(l)
     def removedLabels(l: Label): Option[Int] = eqlabs.get(l).flatMap(s => bpos.get(s.head)).orElse(apos.get(l))
     def keptLabels(l: Label): Option[Int] = bpos.get(l).orElse(apos.get(l))
-
-    // init
-    val first = ch.indexWhere(_ != Keep)
-
-    if (first == -1) return
-
-    val start = math.max(first - ctx, 0)
-    var i = math.max(start - 1, -1)
-    var j = math.max(start - 1, -1)
-    var pos = math.min(start + ctx, first)
 
     def keepPrint(idx: Int): Unit = b(idx) match {
       case bc: LabelAwareByteCode => out.println("  " + intPrint(idx) + ": " + bc.toString(keptLabels))
@@ -329,18 +329,19 @@ private[bcdiff] class Diff(ains: InsnList, bins: InsnList, output: Writer) {
       }
       val restart = ch.indexWhere(_ != Keep, pos)
       val len = if (restart == -1) ch.length - pos else restart - pos
-      if (len > 2*ctx) {
+      val end = math.min(j + len, b.length - 1)
+      if (len > 2*ctx + 1) {
         ((j + 1) to (j + ctx)).foreach(print)
         if (restart != -1) {
-          out.println(s"${MAGENTA}@@ -${i + restart - pos - ctx} +${j + restart - pos - ctx}  @@$RESET")
-          ((j + restart - pos - ctx) to (j + restart - pos - 1)).foreach(print)
+          out.println(s"${MAGENTA}@@ -${i + len - 2*ctx + 1} +${end - ctx} ($len)  @@$RESET")
           i += len - 2*ctx
-          j += len - 2*ctx
+          j = end - ctx
+          (j until (j + ctx)).foreach(print)
         }
       } else {
-        ((j + 1) to (j + len)).foreach(print)
-      }
+        ((j + 1) to end).foreach(print)
 
+      }
       pos += len
     }
   }
