@@ -114,13 +114,14 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
 
       // basic fields
       compareFieldPretty(_.version)("Bytecode version: ", _.toString)
-      compareFieldPretty(_.name)("Class Name: ", clazzN(_))
-      compareFieldPretty(_.superName)("Parent class: ", clazzN(_))
+      compareFieldPretty(_.name)("Class Name: ", clazzN)
+      compareFieldPretty(_.superName)("Parent class: ", clazzN)
 
       // advanced fields
       compareAccessFlags(cn1.map(_.access), cn2.map(_.access), ByteCode.class_access_flags)
       compareInterfaces(cn1.map(c => uglyCast(c.interfaces)), cn2.map(c => uglyCast(c.interfaces)))
-      compareFieldPretty(_.outerClass)("Outer class: ",clazzN(_))
+      compareFieldPretty(_.outerClass)("Outer class: ",clazzN)
+      compareFieldPretty(_.outerMethod)("Outer method: ", s => s)
       // TODO: annotations
 
       compareFields(cn1.map(c => uglyCast(c.fields)), cn2.map(c => uglyCast(c.fields)))
