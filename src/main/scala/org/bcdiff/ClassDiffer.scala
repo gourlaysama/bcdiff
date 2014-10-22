@@ -125,7 +125,7 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
 
       compareFields(cn1.map(c => uglyCast(c.fields)), cn2.map(c => uglyCast(c.fields)))
       // TODO: attributes
-      compareInnerClasses(cn1.map(c => uglyCast(c.innerClasses)), cn2.map(c => uglyCast(c.innerClasses)))
+      compareInnerClasses(cn1.map(_.name).getOrElse(""), cn1.map(c => uglyCast(c.innerClasses)), cn2.map(_.name).getOrElse(""), cn2.map(c => uglyCast(c.innerClasses)))
     }
 
     if (methods) {
@@ -290,9 +290,11 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
     }
   }
 
-  private def compareInnerClasses(in1: Option[Seq[InnerClassNode]], in2: Option[Seq[InnerClassNode]]) {
-    val v1 = in1.map(_.map(i => (i.name, i)).toMap).getOrElse(Map.empty)
-    val v2 = in2.map(_.map(i => (i.name, i)).toMap).getOrElse(Map.empty)
+  private def compareInnerClasses(name1: String, in1: Option[Seq[InnerClassNode]], name2: String, in2: Option[Seq[InnerClassNode]]) {
+    val v1 = in1.map(_.filter(_.outerName == name1).map(i => (i.innerName, i)).toMap).getOrElse(Map.empty)
+    val v2 = in2.map(_.filter(_.outerName == name2).map(i => (i.innerName, i)).toMap).getOrElse(Map.empty)
+
+    if (!v1.isEmpty || !v2.isEmpty) changes()
 
     if (v1.keySet != v2.keySet) {
       val pretty: Set[String] => String = if (color) {
