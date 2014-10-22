@@ -304,9 +304,12 @@ private[bcdiff] class Diff(ains: InsnList, bins: InsnList, output: Writer) {
     def print(idx: Int): Unit = {i += 1; j += 1; keepPrint(idx)}
 
 
-    out.println(s"${MAGENTA}@@ -${math.max(start, 0)} +${math.max(start, 0)}  @@$RESET")
-    (start until pos).foreach(print)
+    if (color)
+      out.println(s"${MAGENTA}@@ -${math.max(start, 0)} +${math.max(start, 0)}  @@$RESET")
+    else
+      out.println(s"@@ -${math.max(start, 0)} +${math.max(start, 0)}  @@")
 
+    (start until pos).foreach(print)
 
     while (pos < ch.length) {
       while(pos < ch.length && ch(pos) != Keep) {
@@ -333,7 +336,11 @@ private[bcdiff] class Diff(ains: InsnList, bins: InsnList, output: Writer) {
       if (len > 2*ctx + 1) {
         ((j + 1) to (j + ctx)).foreach(print)
         if (restart != -1) {
-          out.println(s"${MAGENTA}@@ -${i + len - 2*ctx + 1} +${end - ctx} ($len)  @@$RESET")
+          if (color)
+            out.println(s"${MAGENTA}@@ -${i + len - 2*ctx + 1} +${end - ctx} ($len)  @@$RESET")
+          else
+            out.println(s"@@ -${i + len - 2*ctx + 1} +${end - ctx} ($len)  @@")
+
           i += len - 2*ctx
           j = end - ctx
           (j until (j + ctx)).foreach(print)
