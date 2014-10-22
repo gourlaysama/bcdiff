@@ -39,7 +39,9 @@ class Conf(arg: Seq[String]) extends ScallopConf(arg) {
 
   val methodNameFilter = opt[String](descr = "Only process methods whose name match the provided regex.", argName = "regex")
 
-  val debug = opt[Boolean](hidden = false, noshort = true)
+  val inverse = opt[Boolean]("inverse", short = 'R', default = Some(false), descr = "Inverse the two inputs.")
+
+  val debug = opt[Boolean](hidden = true, noshort = true)
 
   val files = trailArg[List[String]](descr = "Class files / folders to diff (exactly 2)", required = true)
 

@@ -25,7 +25,7 @@ object Main extends App {
       sys.exit(1)
   }
 
-  val List(f1, f2) = files
+  val List(f1, f2) = if (c.inverse()) files.reverse else files
 
   if (f1.getAbsoluteFile == f2.getAbsoluteFile) {
     Console.err.println("Cannot diff a file/directory with itself!")
