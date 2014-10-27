@@ -19,6 +19,8 @@ object Main extends App {
 
   val files = c.files().map(new File(_))
 
+  val quiet = c.quiet()
+
   files.filterNot(_.exists()).foreach {
     t =>
       Console.err.println(s"File '${t.getAbsolutePath}' does not exist!")
@@ -39,6 +41,8 @@ object Main extends App {
             else               Full
 
   val classRegex = c.classFilter.filterNot(_.isEmpty).map(_.r).get
+
+  def exit(changed: Boolean): Nothing = sys.exit(if (c.exitCode() && changed) 1 else 0)
 
   def filterClass(s: Set[String]): Set[String] = {
     def cName(n: String) = n.dropRight(6).replace(File.separatorChar, '.')
@@ -69,10 +73,14 @@ object Main extends App {
         val fi2 = ClassDiffer.FileInfo(new File(f2, e))
 
         if (ClassDiffer.diff(fi1, fi2, c.color(), c.methods(), typ, tmpOut, typ != Full)) Some(tmpOut) else None
-    }}.foreach{f =>
-      Await.result(f, Duration.Inf).map(_.getBuffer).foreach(out.append)
+    }}.flatMap{f =>
+      val buf = Await.result(f, Duration.Inf).map(_.getBuffer)
+      buf.filterNot(_ => quiet).foreach(out.append)
       out.flush
+      buf
     }
+
+    exit(!all.isEmpty)
 
     } finally {
       out.flush()
@@ -94,10 +102,14 @@ object Main extends App {
         val fi2 = new ClassDiffer.FileInfo(Option(ff2.getEntry(e)).map(ff2.getInputStream), f2.getName,
           f2.getPath + jarpath, f2.getAbsolutePath + jarpath)
         if (ClassDiffer.diff(fi1, fi2, c.color(), c.methods(), typ, tmpOut, typ != Full)) Some(tmpOut) else None
-    }}.foreach{f =>
-      Await.result(f, Duration.Inf).map(_.getBuffer).foreach(out.append)
+    }}.flatMap{f =>
+      val buf = Await.result(f, Duration.Inf).map(_.getBuffer)
+      buf.filterNot(_ => quiet).foreach(out.append)
       out.flush
+      buf
     }
+
+    exit(!all.isEmpty)
 
     } finally {
       out.flush()
@@ -107,8 +119,12 @@ object Main extends App {
     }
 
   } else {
-    ClassDiffer.diff(f1, f2, c.color(), c.methods(), typ, out, true)
+    val tmpOut = new StringWriter()
+    val ch = ClassDiffer.diff(f1, f2, c.color(), c.methods(), typ, tmpOut, true)
+    if (!quiet) out.append(tmpOut.getBuffer)
     out.flush()
     out.close()
+
+    exit(ch)
   }
 }

@@ -45,6 +45,10 @@ class Conf(arg: Seq[String]) extends ScallopConf(arg) {
 
   val files = trailArg[List[String]](descr = "Class files / folders to diff (exactly 2)", required = true)
 
+  val exitCode = opt[Boolean]("exit-code", default = Some(false), descr = "Make the program exit with codes similar to diff(1) (1 if there were differences and 0 otherwise).", noshort = true).map(_ || quiet())
+
+  val quiet = opt[Boolean](descr = "Disable all output of the program. Implies --exit-code.", default = Some(false), noshort = true)
+
   validate(files) {
     f => f.size match {
       case 2 => Right(Unit)
