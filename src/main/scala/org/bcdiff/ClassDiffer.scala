@@ -295,9 +295,8 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
     val v1 = in1.map(_.filter(_.outerName == name1).map(i => (i.innerName, i)).toMap).getOrElse(Map.empty)
     val v2 = in2.map(_.filter(_.outerName == name2).map(i => (i.innerName, i)).toMap).getOrElse(Map.empty)
 
-    if (!v1.isEmpty || !v2.isEmpty) changes()
-
     if (v1.keySet != v2.keySet) {
+      changes()
       val pretty: Set[String] => String = if (color) {
         val rem = v1 -- v2.keySet
         val add = v2 -- v1.keySet
