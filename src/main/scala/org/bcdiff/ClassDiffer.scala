@@ -121,7 +121,8 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
       compareAccessFlags(cn1.map(_.access), cn2.map(_.access), ByteCode.class_access_flags)
       compareInterfaces(cn1.map(c => uglyCast(c.interfaces)), cn2.map(c => uglyCast(c.interfaces)))
       compareFieldPretty(_.outerClass)("Outer class: ",clazzN)
-      compareFieldPretty(_.outerMethod)("Outer method: ", s => s)
+      compareFieldPretty(_.outerMethod)("Outer method: ", identity)
+      compareFieldPretty(_.signature)("Generic Signature: ", identity)
       // TODO: annotations
 
       compareFields(cn1.map(c => uglyCast(c.fields)), cn2.map(c => uglyCast(c.fields)))
@@ -362,6 +363,7 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
 
   private def check[T](v1: Option[T], v2: Option[T])(header: String, pretty: T => String) {
     if (!v1.exists(p => v2.exists(_ == p))) {
+      changes()
       v1.foreach(removed(_, header, pretty))
       v2.foreach(added(_, header, pretty))
     }
