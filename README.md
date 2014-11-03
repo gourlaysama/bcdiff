@@ -10,7 +10,8 @@ bcdiff supports:
  * colored output (`--color` is on by default, `--nocolor` to disable),
  * doing the above on between two directories of class files or two jar files,
  * filtering on the (full) class name with a regex, as in `-c 'org\.foo\.bar\..*Test'`,
- * filtering on the method name with a regex, as in `-m 'unapply(Seq)?'`.
+ * filtering on the method name with a regex, as in `-m 'unapply(Seq)?'`,
+ * several options from `git diff`, such as `-R` (reverse inputs), `--quiet` and `--exit-code`.
 
 # Quick example
 
