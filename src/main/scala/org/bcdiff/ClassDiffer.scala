@@ -358,7 +358,7 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
   }
 
   private def compareFieldPretty[T](f: ClassNode => T)(header: String, pretty: T => String)(implicit cn: (Option[ClassNode], Option[ClassNode])) {
-    check(cn._1.map(c => f(c)), cn._2.map(c => f(c)))(header, pretty)
+    check(cn._1.flatMap(c => Option(f(c))), cn._2.flatMap(c => Option(f(c))))(header, pretty)
   }
 
   private def check[T](v1: Option[T], v2: Option[T])(header: String, pretty: T => String) {
