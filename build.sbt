@@ -3,7 +3,7 @@ import Bcdiff._
 
 name := "bcdiff"
 
-version := "0.5.1"
+version := "0.6-SNAPSHOT"
 
 scalaVersion := "2.10.4"
 
