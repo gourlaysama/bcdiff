@@ -375,14 +375,14 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
     if (color)
       out.println(GREEN + BOLD + "+" + RESET + header + GREEN + BOLD + pretty(s) + RESET)
     else
-      out.println("+ " + pretty(s))
+      out.println("+ " + header + pretty(s))
   }
 
   private def removed[T](s: T, header: String = "", pretty: T => String = toS[T] _) {
     if (color)
       out.println(RED + BOLD + "-" + RESET + header + RED + BOLD + pretty(s) + RESET)
     else
-      out.println("- " + pretty(s))
+      out.println("- " + header + pretty(s))
   }
 
   private def clazzN(s: String) = s.replace('/', '.')
