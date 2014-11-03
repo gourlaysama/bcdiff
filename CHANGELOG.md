@@ -1,6 +1,29 @@
 Change history
 ==============
 
+0.5
+----
+
+ - New feature: comparing fields with the same name
+
+ - New feature: comparing generic signatures
+
+ - New feature: reverse inputs with `-R`
+
+ - New feature: `--exit-code` to exit like `diff` does
+
+ - New feature: `--quiet` to run completely silent
+
+ - Fix: better comparison of inner classes
+
+ - Fix: bound check issue with pretty printing bytecode
+
+ - Fix: various pretty printing fixes
+
+ - Added man pages
+
+ - Update to latest ASM
+
 0.4
 ----
 
