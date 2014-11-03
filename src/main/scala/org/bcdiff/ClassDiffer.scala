@@ -293,8 +293,10 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
   }
 
   private def compareInnerClasses(name1: String, in1: Option[Seq[InnerClassNode]], name2: String, in2: Option[Seq[InnerClassNode]]) {
-    val v1 = in1.map(_.filter(_.outerName == name1).map(i => (i.innerName, i)).toMap).getOrElse(Map.empty)
-    val v2 = in2.map(_.filter(_.outerName == name2).map(i => (i.innerName, i)).toMap).getOrElse(Map.empty)
+    // TODO: why is this even necessary?
+    def innerName(i: InnerClassNode): String = Option(i.innerName).getOrElse(i.name)
+    val v1 = in1.map(_.filter(_.outerName == name1).map(i => (innerName(i), i)).toMap).getOrElse(Map.empty)
+    val v2 = in2.map(_.filter(_.outerName == name2).map(i => (innerName(i), i)).toMap).getOrElse(Map.empty)
 
     if (v1.keySet != v2.keySet) {
       changes()
@@ -363,7 +365,7 @@ class ClassDiffer(f1: FileInfo, f2: FileInfo, color: Boolean, methods: Boolean, 
 
   private def check[T](v1: Option[T], v2: Option[T])(header: String, pretty: T => String) {
     if (!v1.exists(p => v2.exists(_ == p))) {
-      changes()
+      if (v1.isDefined || v2.isDefined) changes()
       v1.foreach(removed(_, header, pretty))
       v2.foreach(added(_, header, pretty))
     }
