@@ -1,6 +1,11 @@
 Change history
 ==============
 
+0.5.1
+----
+
+ - Fix: NPE when comparing some constant pool entries
+
 0.5
 ----
 
