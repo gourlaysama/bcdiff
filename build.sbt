@@ -30,7 +30,4 @@ mappings in Universal ++= Seq(
   file("LICENSE") -> "doc/LICENSE") ++
   (pandoc.value ** "*.1").get.map(f => (f -> f.relativeTo(target.value).get.getPath))
 
-// set the color/nocolor default value from stdout being a terminal or not
-bashScriptExtraDefines := Seq("""[[ -t 1 ]] && set -- "-Dbcdiff.color=true" "$@"""")
-
 pandoc := pandocTask.value
