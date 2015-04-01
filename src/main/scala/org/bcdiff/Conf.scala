@@ -11,7 +11,7 @@ import scala.util.Properties._
 class Conf(arg: Seq[String]) extends ScallopConf(arg) {
   val jj = System.getProperty("java.version")
   val jvm = System.getProperty("java.vm.name") + " " + System.getProperty("java.vm.version")
-  version(s"${BuildInfo.name} - JVM bytecode diff tool (c) 2013 Antoine Gourlay\nversion ${BuildInfo.version} ($jj $jvm)")
+  version(s"${BuildInfo.name} - JVM bytecode diff tool (c) 2013-2015 Antoine Gourlay\nversion ${BuildInfo.version} ($jj $jvm)")
   banner(
    s"""
       |Usage: ${BuildInfo.name} [options] [file1] [file2]
