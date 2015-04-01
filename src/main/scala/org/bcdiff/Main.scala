@@ -1,3 +1,8 @@
+/* Copyright (c) 2013-2015, Antoine Gourlay
+ *
+ * This file is part of bcdiff and is licensed under
+ * the Simplified BSD license (see LICENSE file).
+ */
 package org.bcdiff
 
 import java.io.{FileFilter, FilenameFilter, File, OutputStreamWriter, StringWriter}
